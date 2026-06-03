@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Star Wars: Galactic Fleet Logistics & Stellar Harvester</title>
+  <style>
+    :root {
+      --bg: #070b12;
+      --panel: #101722;
+      --panel-2: #0d131d;
+      --frame: #1a2634;
+      --republic: #00ffff;
+      --node: #39ff14;
+      --hazard: #ff3131;
+      --text: #d7edf3;
+      --muted: #83a8b2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #0f1626, var(--bg) 45%);
+      color: var(--text);
+      font-family: "SF Pro Text", "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .frame {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid #274057;
+      box-shadow: 0 0 0 1px #0b2336, inset 0 0 25px rgba(0, 255, 255, 0.05), 0 0 16px rgba(0, 255, 255, 0.08);
+      border-radius: 10px;
+    }
+    .topbar {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; letter-spacing: .04em; }
+    select, input, button {
+      width: 100%;
+      border: 1px solid #32556b;
+      background: #0a111a;
+      color: var(--text);
+      border-radius: 7px;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background: #0b1622;
+      transition: .18s ease;
+    }
+    button:hover { border-color: var(--republic); box-shadow: 0 0 8px rgba(0,255,255,.35); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 12px;
+    }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    .card { padding: 10px; }
+    .card h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .06em; color: var(--republic); text-transform: uppercase; }
+    .sub { color: var(--muted); font-size: 12px; }
+
+    .sector-tabs { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 8px; }
+    .sector-tab.active { border-color: var(--node); color: var(--node); box-shadow: 0 0 10px rgba(57,255,20,.25); }
+
+    .asset-grid { display: grid; gap: 7px; }
+    .asset-row {
+      border: 1px solid #1f3448;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .asset-actions { display: grid; grid-template-columns: auto auto; gap: 6px; }
+
+    .viewport {
+      min-height: 220px;
+      background:
+        linear-gradient(rgba(0,255,255,.06), rgba(0,255,255,.01)),
+        linear-gradient(90deg, rgba(0,255,255,.08) 1px, transparent 1px),
+        linear-gradient(rgba(0,255,255,.08) 1px, transparent 1px),
+        #04070d;
+      background-size: auto, 25px 25px, 25px 25px, auto;
+      border: 1px solid #274057;
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .telemetry { font-size: 13px; line-height: 1.45; }
+    .log {
+      max-height: 220px;
+      overflow: auto;
+      border: 1px solid #1f3448;
+      border-radius: 8px;
+      padding: 8px;
+      background: #081019;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .bar-wrap { margin: 8px 0; }
+    .bar-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+    .bar {
+      margin-top: 4px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid #284455;
+      background: #061019;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #089ccf, var(--republic));
+      box-shadow: 0 0 12px rgba(0,255,255,.65);
+      transition: width .2s linear;
+    }
+    .fill.node { background: linear-gradient(90deg, #0c8a00, var(--node)); box-shadow: 0 0 12px rgba(57,255,20,.65); }
+    .fill.hazard { background: linear-gradient(90deg, #9f1a1a, var(--hazard)); box-shadow: 0 0 12px rgba(255,49,49,.65); }
+
+    .resource-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .resource {
+      border: 1px solid #20374a;
+      border-radius: 8px;
+      padding: 8px;
+      background: #0a131d;
+    }
+    .resource .k { color: var(--muted); font-size: 12px; }
+    .resource .v { color: var(--node); font-weight: 700; margin-top: 3px; }
+
+    .market-grid,.research-grid { display:grid; gap:7px; }
+    .inline { display:grid; grid-template-columns: 1fr auto; gap:6px; align-items:center; }
+    .alert { color: var(--hazard); font-weight: 700; text-shadow: 0 0 8px rgba(255,49,49,.5); }
+    .good { color: var(--node); }
+
+    @media (max-width: 1100px) {
+      .dashboard { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .topbar { grid-template-columns: 1fr; }
+      .viewport { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="frame topbar">
+      <div>
+        <label for="difficulty">Campaign Difficulty</label>
+        <select id="difficulty" aria-label="Campaign Difficulty">
+          <option value="padawan">Padawan (Easy)</option>
+          <option value="jedi" selected>Jedi Knight (Normal)</option>
+          <option value="grand">Grand Master (Hard)</option>
+        </select>
+      </div>
+      <div>
+        <label for="scenario">Tactical Scenario Selector</label>
+        <select id="scenario" aria-label="Tactical Scenario Selector">
+          <option value="none">Standard Campaign</option>
+          <option value="naboo">The Blockade of Naboo</option>
+          <option value="geonosis">Assault on Geonosis</option>
+          <option value="outerrim">The Outer Rim Siege</option>
+        </select>
+      </div>
+      <div>
+        <button id="applyScenario">Load Tactical Scenario</button>
+      </div>
+      <div>
+        <button id="startCampaign">Initiate Extraction Campaign</button>
+      </div>
+    </div>
+
+    <div class="dashboard">
+      <div class="col">
+        <div class="frame card">
+          <h3>Planetary Fleet & Mining Nodes</h3>
+          <div class="sector-tabs" id="sectorTabs"></div>
+          <div class="sub" id="sectorDesc"></div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Sector Capture Margin</span><span id="captureText">0 / 1000 VP</span></div>
+            <div class="bar"><div id="captureBar" class="fill"></div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Drone Fleet Fuel Caps</span><span id="fuelText">0 / 0</span></div>
+            <div class="bar"><div id="fuelBar" class="fill node"></div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Sector Planetary Shield Integrity</span><span id="shieldText">0 / 0</span></div>
+            <div class="bar"><div id="shieldBar" class="fill hazard"></div></div>
+          </div>
+          <div class="inline" style="margin-top:8px">
+            <span class="sub">Local Fuel Transfer (+250)</span>
+            <button id="pumpFuel">Pump Fuel</button>
+          </div>
+        </div>
+
+        <div class="frame card">
+          <h3>Sector Asset Allocation</h3>
+          <div id="assetGrid" class="asset-grid"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="frame card">
+          <h3>Outer Space Visual Grid Viewport</h3>
+          <div class="viewport">
+            <div class="telemetry" id="telemetry"></div>
+            <div class="telemetry" id="telemetry2"></div>
+          </div>
+        </div>
+        <div class="frame card">
+          <h3>Sector Combat Log</h3>
+          <div id="combatLog" class="log"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="frame card">
+          <h3>Galactic Command Logistics</h3>
+          <div class="resource-grid" id="resourceGrid"></div>
+        </div>
+
+        <div class="frame card">
+          <h3>Market Broker</h3>
+          <div class="market-grid">
+            <div class="inline"><span class="sub" id="tibannaRate"></span><button id="sellTibanna">Sell 500 Tibanna</button></div>
+            <div class="inline"><span class="sub" id="kyberRate"></span><button id="sellKyber">Sell 50 Kyber</button></div>
+          </div>
+        </div>
+
+        <div class="frame card">
+          <h3>Research Unlock Tree</h3>
+          <div id="researchGrid" class="research-grid"></div>
+        </div>
+
+        <div class="frame card">
+          <h3>Data Transmission Core</h3>
+          <label for="saveMatrix">Save Matrix Signal</label>
+          <input id="saveMatrix" placeholder="Paste Base64 save matrix" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px">
+            <button id="exportSave">Export Save Matrix</button>
+            <button id="importSave">Import Save Matrix</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "sw_fleet_logistics_save_v1";
+      const TICK_MS = 800;
+      const VP_MAX = 1000;
+      const MAX_LOG_ENTRIES = 70;
+      const MAX_DISPLAYED_LOGS = 50;
+
+      const DIFFICULTY = {
+        padawan: { income: 1.5, enemyDamage: 0.5, fuelDrain: 0.5, enemyRegen: 1, cost: 1, groundedDestroyChance: 0 },
+        jedi: { income: 1, enemyDamage: 1, fuelDrain: 1, enemyRegen: 1, cost: 1, groundedDestroyChance: 0 },
+        grand: { income: 1, enemyDamage: 1, fuelDrain: 1, enemyRegen: 2, cost: 2, groundedDestroyChance: 0.1 }
+      };
+
+      const ASSETS = {
+        probe: {
+          name: "Automatic Mining Probes",
+          cost: 120,
+          fuelUse: 0.15,
+          damage: 0.8,
+          credit: 1.6,
+          tibanna: 1,
+          kyber: 0.35
+        },
+        interceptor: {
+          name: "Droid-Swarm Interceptors",
+          cost: 650,
+          fuelUse: 0.35,
+          damage: 8,
+          credit: 0.4,
+          tibanna: 0,
+          kyber: 0,
+          shieldBoost: 1.1
+        },
+        cargo: {
+          name: "Heavy Cargo Shuttles",
+          cost: 1450,
+          fuelUse: 0.6,
+          damage: 1.2,
+          credit: 3,
+          tibanna: 0.8,
+          kyber: 0.3
+        },
+        laat: {
+          name: "LAAT Gunships",
+          cost: 5200,
+          fuelUse: 2.3,
+          damage: 22,
+          credit: 4.8,
+          tibanna: 0,
+          kyber: 0,
+          unlock: "laat"
+        },
+        venator: {
+          name: "Venator-class Star Destroyers",
+          cost: 17500,
+          fuelUse: 5.8,
+          damage: 60,
+          credit: 8,
+          tibanna: 0,
+          kyber: 0,
+          unlock: "venator"
+        }
+      };
+
+      const RESEARCH = {
+        troopers501: {
+          title: "501st Heavy Troopers",
+          costs: { intel: 120, kyber: 25 },
+          unlock: "troopers501",
+          desc: "+12% interceptor combat output"
+        },
+        laat: {
+          title: "LAAT Gunships",
+          costs: { intel: 280, kyber: 95 },
+          unlock: "laat",
+          desc: "Unlock LAAT tactical capital craft"
+        },
+        venator: {
+          title: "Venator Program",
+          costs: { credits: 50000, intel: 950, kyber: 420 },
+          unlock: "venator",
+          desc: "Unlock Venator-class command ships"
+        },
+        hyperlane: {
+          title: "Hyperlane Routing AI",
+          costs: { intel: 320, kyber: 90 },
+          unlock: "hyperlane",
+          desc: "+20% passive resource throughput"
+        }
+      };
+
+      const DOM = {
+        difficulty: document.getElementById("difficulty"),
+        scenario: document.getElementById("scenario"),
+        applyScenario: document.getElementById("applyScenario"),
+        startCampaign: document.getElementById("startCampaign"),
+        sectorTabs: document.getElementById("sectorTabs"),
+        sectorDesc: document.getElementById("sectorDesc"),
+        captureBar: document.getElementById("captureBar"),
+        fuelBar: document.getElementById("fuelBar"),
+        shieldBar: document.getElementById("shieldBar"),
+        captureText: document.getElementById("captureText"),
+        fuelText: document.getElementById("fuelText"),
+        shieldText: document.getElementById("shieldText"),
+        pumpFuel: document.getElementById("pumpFuel"),
+        assetGrid: document.getElementById("assetGrid"),
+        telemetry: document.getElementById("telemetry"),
+        telemetry2: document.getElementById("telemetry2"),
+        combatLog: document.getElementById("combatLog"),
+        resourceGrid: document.getElementById("resourceGrid"),
+        tibannaRate: document.getElementById("tibannaRate"),
+        kyberRate: document.getElementById("kyberRate"),
+        sellTibanna: document.getElementById("sellTibanna"),
+        sellKyber: document.getElementById("sellKyber"),
+        researchGrid: document.getElementById("researchGrid"),
+        saveMatrix: document.getElementById("saveMatrix"),
+        exportSave: document.getElementById("exportSave"),
+        importSave: document.getElementById("importSave")
+      };
+
+      const fmt = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+      const chance = (p) => Math.random() < p;
+      const encodeState = (value) => {
+        const bytes = new TextEncoder().encode(JSON.stringify(value));
+        const chars = [];
+        for (let i = 0; i < bytes.length; i += 1) chars.push(String.fromCharCode(bytes[i]));
+        return btoa(chars.join(""));
+      };
+      const decodeState = (base64) => {
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
+      };
+
+      const defaultState = () => ({
+        difficulty: "jedi",
+        scenario: "none",
+        selectedSector: "coruscant",
+        running: false,
+        runAllSectors: false,
+        constantWaves: false,
+        constantShieldDrain: false,
+        resources: {
+          credits: 2000,
+          tibanna: 1200,
+          kyber: 40,
+          intel: 8
+        },
+        market: {
+          tibannaCreditRate: 0.42,
+          kyberCreditRate: 12.8
+        },
+        researchUnlocked: {
+          troopers501: false,
+          laat: false,
+          venator: false,
+          hyperlane: false
+        },
+        sectors: {
+          coruscant: {
+            id: "coruscant",
+            name: "Coruscant Orbit",
+            descriptor: "Safe lanes, low extraction yield.",
+            risk: 0.8,
+            yields: { credits: 1.1, tibanna: 0.5, kyber: 0.3, intel: 1.3 },
+            captureVP: 500,
+            enemyShield: 180,
+            enemyControl: 50,
+            shield: 900,
+            shieldMax: 1000,
+            localFuel: 1200,
+            localFuelCap: 4000,
+            assets: { probe: 1, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
+            victoryPayoutReady: true,
+            groundedAlerted: false
+          },
+          geonosis: {
+            id: "geonosis",
+            name: "Asteroid Field of Geonosis",
+            descriptor: "High Kyber deposits, elevated blockade hazard.",
+            risk: 1.45,
+            yields: { credits: 1, tibanna: 0.8, kyber: 2.1, intel: 1.2 },
+            captureVP: 350,
+            enemyShield: 260,
+            enemyControl: 65,
+            shield: 750,
+            shieldMax: 900,
+            localFuel: 900,
+            localFuelCap: 3500,
+            assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
+            victoryPayoutReady: true,
+            groundedAlerted: false
+          },
+          outerrim: {
+            id: "outerrim",
+            name: "Outer Rim Gas Giants",
+            descriptor: "Extreme Tibanna extraction with severe attrition.",
+            risk: 1.9,
+            yields: { credits: 0.9, tibanna: 2.8, kyber: 0.7, intel: 1.1 },
+            captureVP: 280,
+            enemyShield: 320,
+            enemyControl: 72,
+            shield: 700,
+            shieldMax: 850,
+            localFuel: 700,
+            localFuelCap: 5000,
+            assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
+            victoryPayoutReady: true,
+            groundedAlerted: false
+          }
+        },
+        logs: ["[BOOT] Republic command uplink initialized."]
+      });
+
+      let state = loadState();
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return defaultState();
+          const parsed = JSON.parse(raw);
+          const merged = defaultState();
+          Object.assign(merged, parsed);
+          merged.resources = { ...merged.resources, ...parsed.resources };
+          merged.market = { ...merged.market, ...parsed.market };
+          merged.researchUnlocked = { ...merged.researchUnlocked, ...parsed.researchUnlocked };
+          for (const id of Object.keys(merged.sectors)) {
+            merged.sectors[id] = {
+              ...merged.sectors[id],
+              ...(parsed.sectors && parsed.sectors[id] ? parsed.sectors[id] : {})
+            };
+            merged.sectors[id].assets = {
+              ...defaultState().sectors[id].assets,
+              ...(parsed.sectors && parsed.sectors[id] && parsed.sectors[id].assets ? parsed.sectors[id].assets : {})
+            };
+          }
+          return merged;
+        } catch {
+          return defaultState();
+        }
+      }
+
+      function persist() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function currentDifficulty() {
+        return DIFFICULTY[state.difficulty] || DIFFICULTY.jedi;
+      }
+
+      function selectedSector() {
+        return state.sectors[state.selectedSector];
+      }
+
+      function addLog(text) {
+        const stamp = new Date().toLocaleTimeString();
+        state.logs.push(`[${stamp}] ${text}`);
+        if (state.logs.length > MAX_LOG_ENTRIES) state.logs = state.logs.slice(-MAX_LOG_ENTRIES);
+      }
+
+      function renderTabs() {
+        DOM.sectorTabs.innerHTML = "";
+        for (const s of Object.values(state.sectors)) {
+          const btn = document.createElement("button");
+          btn.className = "sector-tab" + (s.id === state.selectedSector ? " active" : "");
+          btn.textContent = s.name;
+          btn.onclick = () => {
+            state.selectedSector = s.id;
+            render();
+            persist();
+          };
+          DOM.sectorTabs.appendChild(btn);
+        }
+      }
+
+      function renderResources() {
+        const mapping = [
+          ["Credits", state.resources.credits],
+          ["Tibanna Gas", state.resources.tibanna],
+          ["Kyber Fragments", state.resources.kyber],
+          ["Republic Intel", state.resources.intel]
+        ];
+        DOM.resourceGrid.innerHTML = "";
+        for (const [k, v] of mapping) {
+          const box = document.createElement("div");
+          box.className = "resource";
+          box.innerHTML = `<div class="k">${k}</div><div class="v">${fmt(v)}</div>`;
+          DOM.resourceGrid.appendChild(box);
+        }
+      }
+
+      function renderAssets() {
+        const sector = selectedSector();
+        const diff = currentDifficulty();
+        DOM.assetGrid.innerHTML = "";
+
+        for (const [key, def] of Object.entries(ASSETS)) {
+          const unlocked = !def.unlock || state.researchUnlocked[def.unlock];
+          const cost = Math.round(def.cost * diff.cost);
+          const row = document.createElement("div");
+          row.className = "asset-row";
+          row.innerHTML = `
+            <div>
+              <div>${def.name}</div>
+              <div class="sub">Cost: ${fmt(cost)} Credits | Owned: ${sector.assets[key]}${!unlocked ? " | LOCKED" : ""}</div>
+            </div>
+          `;
+          const actions = document.createElement("div");
+          actions.className = "asset-actions";
+          const buy = document.createElement("button");
+          buy.textContent = "+1";
+          buy.disabled = !unlocked || state.resources.credits < cost;
+          buy.onclick = () => {
+            if (state.resources.credits < cost || !unlocked) return;
+            state.resources.credits -= cost;
+            sector.assets[key] += 1;
+            addLog(`${def.name} deployed in ${sector.name}.`);
+            render();
+            persist();
+          };
+
+          const sell = document.createElement("button");
+          sell.textContent = "-1";
+          sell.disabled = sector.assets[key] <= 0;
+          sell.onclick = () => {
+            if (sector.assets[key] <= 0) return;
+            sector.assets[key] -= 1;
+            state.resources.credits += Math.round(cost * 0.45);
+            render();
+            persist();
+          };
+          actions.append(buy, sell);
+          row.appendChild(actions);
+          DOM.assetGrid.appendChild(row);
+        }
+      }
+
+      function renderResearch() {
+        DOM.researchGrid.innerHTML = "";
+        for (const r of Object.values(RESEARCH)) {
+          const unlocked = state.researchUnlocked[r.unlock];
+          const canPay = Object.entries(r.costs).every(([k, v]) => state.resources[k] >= v);
+          const row = document.createElement("div");
+          row.className = "asset-row";
+          row.innerHTML = `<div><div>${r.title}</div><div class="sub">${r.desc} | Cost: ${Object.entries(r.costs).map(([k, v]) => `${v} ${k}`).join(", ")}</div></div>`;
+          const btn = document.createElement("button");
+          btn.textContent = unlocked ? "Unlocked" : "Research";
+          btn.disabled = unlocked || !canPay;
+          btn.onclick = () => {
+            if (unlocked) return;
+            for (const [k, v] of Object.entries(r.costs)) state.resources[k] -= v;
+            state.researchUnlocked[r.unlock] = true;
+            addLog(`Research complete: ${r.title}.`);
+            render();
+            persist();
+          };
+          row.appendChild(btn);
+          DOM.researchGrid.appendChild(row);
+        }
+      }
+
+      function renderCenter() {
+        const s = selectedSector();
+        const active = state.runAllSectors || (state.running && state.selectedSector === s.id);
+        DOM.sectorDesc.textContent = `${s.descriptor} ${active ? "Campaign Active" : "Campaign Standby"}`;
+
+        const capturePct = (s.captureVP / VP_MAX) * 100;
+        const fuelPct = (s.localFuel / s.localFuelCap) * 100;
+        const shieldPct = (s.shield / s.shieldMax) * 100;
+        DOM.captureBar.style.width = `${capturePct}%`;
+        DOM.fuelBar.style.width = `${clamp(fuelPct, 0, 100)}%`;
+        DOM.shieldBar.style.width = `${clamp(shieldPct, 0, 100)}%`;
+        DOM.captureText.textContent = `${fmt(s.captureVP)} / ${VP_MAX} VP`;
+        DOM.fuelText.textContent = `${fmt(s.localFuel)} / ${fmt(s.localFuelCap)}`;
+        DOM.shieldText.textContent = `${fmt(s.shield)} / ${fmt(s.shieldMax)}`;
+
+        const totalAssets = Object.values(s.assets).reduce((a, b) => a + b, 0);
+        const grounded = s.localFuel <= 0;
+        DOM.telemetry.innerHTML = [
+          `<div><strong>${s.name}</strong></div>`,
+          `<div>Separatist Control: <span class="${s.enemyControl > 60 ? "alert" : ""}">${fmt(s.enemyControl)}%</span></div>`,
+          `<div>Enemy Shield Envelope: ${fmt(s.enemyShield)}</div>`,
+          `<div>Fleet Assets Active: ${fmt(totalAssets)}</div>`,
+          `<div>Drone Deployment Limit: ${fmt(Math.floor(s.localFuelCap / 35))}</div>`,
+          `<div>Capital Ship Status: <span class="${grounded ? "alert" : "good"}">${grounded ? "GROUNDED ALERT" : "Nominal"}</span></div>`
+        ].join("");
+
+        DOM.telemetry2.innerHTML = [
+          `<div><strong>Live Telemetry Tick</strong></div>`,
+          `<div>Campaign Mode: ${state.runAllSectors ? "Tri-Sector Siege" : (state.running ? "Single-Sector" : "Idle")}</div>`,
+          `<div>Difficulty Matrix: ${state.difficulty.toUpperCase()}</div>`,
+          `<div>Constant Waves: ${state.constantWaves ? "ENABLED" : "STANDBY"}</div>`,
+          `<div>Shield Drain Event: <span class="${state.constantShieldDrain ? "alert" : ""}">${state.constantShieldDrain ? "ACTIVE" : "None"}</span></div>`,
+          `<div>Market Ratios: TIB ${state.market.tibannaCreditRate.toFixed(2)} | KYB ${state.market.kyberCreditRate.toFixed(2)}</div>`
+        ].join("");
+      }
+
+      function renderLog() {
+        DOM.combatLog.innerHTML = state.logs.slice(-MAX_DISPLAYED_LOGS).map((l) => `<div>${l}</div>`).join("");
+        DOM.combatLog.scrollTop = DOM.combatLog.scrollHeight;
+      }
+
+      function renderMarket() {
+        DOM.tibannaRate.textContent = `Tibanna Exchange: 1 Tibanna = ${state.market.tibannaCreditRate.toFixed(2)} Credits`;
+        DOM.kyberRate.textContent = `Kyber Exchange: 1 Kyber = ${state.market.kyberCreditRate.toFixed(2)} Credits`;
+      }
+
+      function render() {
+        DOM.difficulty.value = state.difficulty;
+        DOM.scenario.value = state.scenario;
+        DOM.startCampaign.textContent = state.running || state.runAllSectors ? "Campaign Running" : "Initiate Extraction Campaign";
+        renderTabs();
+        renderResources();
+        renderAssets();
+        renderResearch();
+        renderCenter();
+        renderLog();
+        renderMarket();
+      }
+
+      function campaignTick() {
+        const diff = currentDifficulty();
+
+        state.market.tibannaCreditRate = clamp(state.market.tibannaCreditRate + (Math.random() - 0.5) * 0.03, 0.22, 0.72);
+        state.market.kyberCreditRate = clamp(state.market.kyberCreditRate + (Math.random() - 0.5) * 0.4, 8, 20);
+
+        let creditsGain = 2.2 * diff.income;
+        let tibannaGain = 0;
+        let kyberGain = 0;
+        let intelGain = 0;
+
+        const activeSectors = state.runAllSectors
+          ? Object.values(state.sectors)
+          : (state.running ? [selectedSector()] : []);
+
+        for (const s of activeSectors) {
+          const a = s.assets;
+
+          let combatMult = state.researchUnlocked.troopers501 ? 1.12 : 1;
+          let throughputMult = state.researchUnlocked.hyperlane ? 1.2 : 1;
+
+          const fuelBurn = (
+            a.probe * ASSETS.probe.fuelUse +
+            a.interceptor * ASSETS.interceptor.fuelUse +
+            a.cargo * ASSETS.cargo.fuelUse +
+            a.laat * ASSETS.laat.fuelUse +
+            a.venator * ASSETS.venator.fuelUse
+          ) * diff.fuelDrain * (state.constantWaves ? 1.1 : 1);
+
+          s.localFuel = Math.max(0, s.localFuel - fuelBurn);
+          const grounded = s.localFuel <= 0;
+          const groundedModifier = grounded ? 0.15 : 1;
+
+          if (grounded && (a.laat + a.venator) > 0 && s.shield <= 0 && diff.groundedDestroyChance > 0 && chance(diff.groundedDestroyChance)) {
+            if (a.venator > 0) {
+              a.venator -= 1;
+              addLog(`HAZARD: Grounded Venator destroyed in ${s.name}.`);
+            } else if (a.laat > 0) {
+              a.laat -= 1;
+              addLog(`HAZARD: Grounded LAAT lost in ${s.name}.`);
+            }
+          }
+
+          const enemyWave = (6 + s.risk * 5) * (state.constantWaves ? 1.8 : 1);
+          const enemyDamage = enemyWave * diff.enemyDamage;
+          const friendlyShielding = a.interceptor * ASSETS.interceptor.shieldBoost;
+          s.shield = clamp(s.shield - Math.max(0, enemyDamage - friendlyShielding), 0, s.shieldMax);
+
+          const enemyRegen = (2.2 + s.risk) * diff.enemyRegen * (state.constantWaves ? 1.25 : 1);
+          const playerDamage = (
+            a.probe * ASSETS.probe.damage +
+            a.interceptor * ASSETS.interceptor.damage * combatMult +
+            a.cargo * ASSETS.cargo.damage +
+            a.laat * ASSETS.laat.damage +
+            a.venator * ASSETS.venator.damage
+          ) * groundedModifier;
+
+          s.enemyShield = clamp(s.enemyShield + enemyRegen - (playerDamage * 0.34), 0, 620);
+          const tug = clamp((playerDamage - s.enemyShield * 0.11) * 0.75, -24, 24);
+          s.captureVP = clamp(s.captureVP + tug, 0, VP_MAX);
+          s.enemyControl = 100 - ((s.captureVP / VP_MAX) * 100);
+
+          if (state.constantShieldDrain) {
+            s.shield = clamp(s.shield - 4.8, 0, s.shieldMax);
+          } else {
+            s.shield = clamp(s.shield + 1.2, 0, s.shieldMax);
+          }
+
+          const sectorThroughput = throughputMult * diff.income;
+          creditsGain += (a.probe * ASSETS.probe.credit * s.yields.credits + a.cargo * ASSETS.cargo.credit + a.laat * ASSETS.laat.credit + a.venator * ASSETS.venator.credit) * sectorThroughput * groundedModifier;
+          tibannaGain += (a.probe * ASSETS.probe.tibanna + a.cargo * ASSETS.cargo.tibanna) * s.yields.tibanna * sectorThroughput;
+          kyberGain += (a.probe * ASSETS.probe.kyber + a.cargo * ASSETS.cargo.kyber) * s.yields.kyber * sectorThroughput;
+          intelGain += (a.interceptor * 0.24 + a.laat * 0.5 + a.venator * 1.4 + (s.captureVP / 1000) * 0.2) * s.yields.intel;
+
+          if (s.captureVP >= VP_MAX && s.victoryPayoutReady) {
+            const burstCredits = Math.round(22000 * s.risk * diff.income);
+            const burstIntel = Math.round(220 * s.risk);
+            state.resources.credits += burstCredits;
+            state.resources.intel += burstIntel;
+            addLog(`SECTOR SECURED: ${s.name}. Awarded ${fmt(burstCredits)} Credits and ${fmt(burstIntel)} Intel.`);
+            s.captureVP = 680;
+            s.enemyShield = Math.min(620, s.enemyShield + 120);
+            s.victoryPayoutReady = false;
+          }
+          if (s.captureVP < 920) s.victoryPayoutReady = true;
+
+          if (grounded && (a.laat + a.venator > 0) && !s.groundedAlerted) {
+            addLog(`Grounded Alert: Capital craft in ${s.name} operating at 15% efficiency.`);
+            s.groundedAlerted = true;
+          }
+          if (!grounded) {
+            s.groundedAlerted = false;
+          }
+        }
+
+        state.resources.credits += creditsGain;
+        state.resources.tibanna = Math.max(0, state.resources.tibanna + tibannaGain);
+        state.resources.kyber = Math.max(0, state.resources.kyber + kyberGain);
+        state.resources.intel = Math.max(0, state.resources.intel + intelGain);
+      }
+
+      function applyScenario(key) {
+        state = defaultState();
+        state.scenario = key;
+
+        if (key === "naboo") {
+          state.resources.credits = 0;
+          state.resources.tibanna = 10000;
+          state.sectors.coruscant.assets.probe = 10;
+          for (const s of Object.values(state.sectors)) {
+            s.captureVP = 200;
+            s.enemyControl = 80;
+            s.enemyShield = 350;
+          }
+          addLog("Scenario loaded: The Blockade of Naboo. Separatist control at 80%.");
+        }
+
+        if (key === "geonosis") {
+          state.resources.credits = 50000;
+          state.resources.intel = 500;
+          state.researchUnlocked.troopers501 = true;
+          state.researchUnlocked.laat = true;
+          state.constantWaves = true;
+          state.difficulty = "grand";
+          state.selectedSector = "geonosis";
+          addLog("Scenario loaded: Assault on Geonosis. Hard mode forced with relentless droid waves.");
+        }
+
+        if (key === "outerrim") {
+          state.resources.credits = 500000;
+          state.resources.kyber = 5000;
+          for (const k of Object.keys(state.researchUnlocked)) state.researchUnlocked[k] = true;
+          state.runAllSectors = true;
+          state.running = true;
+          state.constantShieldDrain = true;
+          for (const s of Object.values(state.sectors)) {
+            s.assets.probe = 12;
+            s.assets.interceptor = 8;
+            s.assets.cargo = 6;
+            s.assets.laat = 3;
+            s.assets.venator = 1;
+            s.captureVP = 540;
+            s.localFuel = s.localFuelCap * 0.7;
+          }
+          addLog("Scenario loaded: The Outer Rim Siege. Tri-sector command and persistent shield drain enabled.");
+        }
+
+        if (key === "none") {
+          state.scenario = "none";
+          addLog("Standard campaign initialized.");
+        }
+
+        persist();
+        render();
+      }
+
+      DOM.difficulty.addEventListener("change", (e) => {
+        state.difficulty = e.target.value;
+        addLog(`Difficulty updated to ${state.difficulty.toUpperCase()}.`);
+        persist();
+        render();
+      });
+
+      DOM.applyScenario.addEventListener("click", () => {
+        applyScenario(DOM.scenario.value);
+      });
+
+      DOM.startCampaign.addEventListener("click", () => {
+        if (state.runAllSectors) {
+          state.running = true;
+          addLog("Tri-sector extraction campaign active.");
+        } else {
+          state.running = !state.running;
+          addLog(state.running ? `Campaign started in ${selectedSector().name}.` : "Campaign paused.");
+        }
+        persist();
+        render();
+      });
+
+      DOM.pumpFuel.addEventListener("click", () => {
+        const s = selectedSector();
+        const transfer = Math.min(250, state.resources.tibanna);
+        if (transfer <= 0) return;
+        state.resources.tibanna -= transfer;
+        s.localFuel = clamp(s.localFuel + transfer, 0, s.localFuelCap);
+        addLog(`Fuel transfer complete: +${transfer} Tibanna to ${s.name}.`);
+        persist();
+        render();
+      });
+
+      DOM.sellTibanna.addEventListener("click", () => {
+        const amount = 500;
+        if (state.resources.tibanna < amount) return;
+        state.resources.tibanna -= amount;
+        const payout = amount * state.market.tibannaCreditRate;
+        state.resources.credits += payout;
+        addLog(`Market sale executed: ${amount} Tibanna for ${fmt(payout)} Credits.`);
+        persist();
+        render();
+      });
+
+      DOM.sellKyber.addEventListener("click", () => {
+        const amount = 50;
+        if (state.resources.kyber < amount) return;
+        state.resources.kyber -= amount;
+        const payout = amount * state.market.kyberCreditRate;
+        state.resources.credits += payout;
+        addLog(`Market sale executed: ${amount} Kyber for ${fmt(payout)} Credits.`);
+        persist();
+        render();
+      });
+
+      DOM.exportSave.addEventListener("click", () => {
+        const packed = encodeState(state);
+        DOM.saveMatrix.value = packed;
+        addLog("Save matrix exported.");
+        persist();
+        render();
+      });
+
+      DOM.importSave.addEventListener("click", () => {
+        const raw = DOM.saveMatrix.value.trim();
+        if (!raw) return;
+        try {
+          const parsed = decodeState(raw);
+          const clean = defaultState();
+          Object.assign(clean, parsed);
+          clean.resources = { ...clean.resources, ...parsed.resources };
+          clean.market = { ...clean.market, ...parsed.market };
+          clean.researchUnlocked = { ...clean.researchUnlocked, ...parsed.researchUnlocked };
+          for (const id of Object.keys(clean.sectors)) {
+            clean.sectors[id] = { ...clean.sectors[id], ...((parsed.sectors || {})[id] || {}) };
+            clean.sectors[id].assets = { ...defaultState().sectors[id].assets, ...(((parsed.sectors || {})[id] || {}).assets || {}) };
+          }
+          state = clean;
+          addLog("Save matrix imported.");
+          persist();
+          render();
+        } catch {
+          addLog("Import failed: invalid save matrix.");
+          render();
+        }
+      });
+
+      setInterval(() => {
+        campaignTick();
+        persist();
+        render();
+      }, TICK_MS);
+
+      render();
+      persist();
+    })();
+  </script>
+</body>
+</html>
