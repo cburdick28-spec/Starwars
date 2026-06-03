@@ -165,7 +165,7 @@
     <div class="frame topbar">
       <div>
         <label for="difficulty">Campaign Difficulty</label>
-        <select id="difficulty">
+        <select id="difficulty" aria-label="Campaign Difficulty">
           <option value="padawan">Padawan (Easy)</option>
           <option value="jedi" selected>Jedi Knight (Normal)</option>
           <option value="grand">Grand Master (Hard)</option>
@@ -173,7 +173,7 @@
       </div>
       <div>
         <label for="scenario">Tactical Scenario Selector</label>
-        <select id="scenario">
+        <select id="scenario" aria-label="Tactical Scenario Selector">
           <option value="none">Standard Campaign</option>
           <option value="naboo">The Blockade of Naboo</option>
           <option value="geonosis">Assault on Geonosis</option>
@@ -271,6 +271,8 @@
       const STORAGE_KEY = "sw_fleet_logistics_save_v1";
       const TICK_MS = 800;
       const VP_MAX = 1000;
+      const MAX_LOG_ENTRIES = 70;
+      const MAX_DISPLAYED_LOGS = 50;
 
       const DIFFICULTY = {
         padawan: { income: 1.5, enemyDamage: 0.5, fuelDrain: 0.5, enemyRegen: 1, cost: 1, groundedDestroyChance: 0 },
@@ -388,6 +390,17 @@
       const fmt = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
       const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
       const chance = (p) => Math.random() < p;
+      const encodeState = (value) => {
+        const bytes = new TextEncoder().encode(JSON.stringify(value));
+        const chars = [];
+        for (let i = 0; i < bytes.length; i += 1) chars.push(String.fromCharCode(bytes[i]));
+        return btoa(chars.join(""));
+      };
+      const decodeState = (base64) => {
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
+      };
 
       const defaultState = () => ({
         difficulty: "jedi",
@@ -428,7 +441,8 @@
             localFuel: 1200,
             localFuelCap: 4000,
             assets: { probe: 1, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true
+            victoryPayoutReady: true,
+            groundedAlerted: false
           },
           geonosis: {
             id: "geonosis",
@@ -444,7 +458,8 @@
             localFuel: 900,
             localFuelCap: 3500,
             assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true
+            victoryPayoutReady: true,
+            groundedAlerted: false
           },
           outerrim: {
             id: "outerrim",
@@ -460,7 +475,8 @@
             localFuel: 700,
             localFuelCap: 5000,
             assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true
+            victoryPayoutReady: true,
+            groundedAlerted: false
           }
         },
         logs: ["[BOOT] Republic command uplink initialized."]
@@ -509,7 +525,7 @@
       function addLog(text) {
         const stamp = new Date().toLocaleTimeString();
         state.logs.push(`[${stamp}] ${text}`);
-        if (state.logs.length > 70) state.logs.splice(0, state.logs.length - 70);
+        if (state.logs.length > MAX_LOG_ENTRIES) state.logs = state.logs.slice(-MAX_LOG_ENTRIES);
       }
 
       function renderTabs() {
@@ -650,7 +666,7 @@
       }
 
       function renderLog() {
-        DOM.combatLog.innerHTML = state.logs.slice(-50).map((l) => `<div>${l}</div>`).join("");
+        DOM.combatLog.innerHTML = state.logs.slice(-MAX_DISPLAYED_LOGS).map((l) => `<div>${l}</div>`).join("");
         DOM.combatLog.scrollTop = DOM.combatLog.scrollHeight;
       }
 
@@ -758,8 +774,12 @@
           }
           if (s.captureVP < 920) s.victoryPayoutReady = true;
 
-          if (grounded && (a.laat + a.venator > 0)) {
+          if (grounded && (a.laat + a.venator > 0) && !s.groundedAlerted) {
             addLog(`Grounded Alert: Capital craft in ${s.name} operating at 15% efficiency.`);
+            s.groundedAlerted = true;
+          }
+          if (!grounded) {
+            s.groundedAlerted = false;
           }
         }
 
@@ -881,7 +901,7 @@
       });
 
       DOM.exportSave.addEventListener("click", () => {
-        const packed = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        const packed = encodeState(state);
         DOM.saveMatrix.value = packed;
         addLog("Save matrix exported.");
         persist();
@@ -892,7 +912,7 @@
         const raw = DOM.saveMatrix.value.trim();
         if (!raw) return;
         try {
-          const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+          const parsed = decodeState(raw);
           const clean = defaultState();
           Object.assign(clean, parsed);
           clean.resources = { ...clean.resources, ...parsed.resources };
