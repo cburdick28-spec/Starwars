@@ -3,23 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Star Wars: Galactic Fleet Logistics & Stellar Harvester</title>
+  <title>Star Wars: Republic Overseer - No Man's Galaxy</title>
   <style>
     :root {
-      --bg: #070b12;
-      --panel: #101722;
-      --panel-2: #0d131d;
-      --frame: #1a2634;
+      --bg: #05070b;
+      --panel: #0b1320;
+      --panel-2: #0c1726;
+      --frame: #152235;
+      --grid: rgba(0, 255, 255, 0.08);
       --republic: #00ffff;
-      --node: #39ff14;
-      --hazard: #ff3131;
+      --credit: #39ff14;
+      --alert: #ff3131;
       --text: #d7edf3;
-      --muted: #83a8b2;
+      --muted: #7fa6b4;
+      --shadow: rgba(0, 255, 255, 0.12);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at top, #0f1626, var(--bg) 45%);
+      background: radial-gradient(circle at top, #0b1220, var(--bg) 55%);
       color: var(--text);
       font-family: "SF Pro Text", "Segoe UI", Arial, sans-serif;
       min-height: 100vh;
@@ -27,239 +29,390 @@
     .app {
       max-width: 1500px;
       margin: 0 auto;
-      padding: 12px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
     .frame {
       background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid #274057;
-      box-shadow: 0 0 0 1px #0b2336, inset 0 0 25px rgba(0, 255, 255, 0.05), 0 0 16px rgba(0, 255, 255, 0.08);
+      border: 1px solid #20344c;
       border-radius: 10px;
+      box-shadow: 0 0 0 1px #0b1b2c, inset 0 0 18px rgba(0, 255, 255, 0.06), 0 0 14px var(--shadow);
+      padding: 12px;
     }
-    .topbar {
-      padding: 10px;
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .title {
       display: grid;
-      grid-template-columns: repeat(4, minmax(160px, 1fr));
-      gap: 10px;
-      align-items: end;
+      gap: 4px;
     }
-    label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; letter-spacing: .04em; }
-    select, input, button {
-      width: 100%;
-      border: 1px solid #32556b;
-      background: #0a111a;
+    .title h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--republic);
+      text-shadow: 0 0 12px rgba(0, 255, 255, 0.45);
+    }
+    .title .sub {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    button, input {
+      border: 1px solid #2a4660;
+      background: #07101a;
       color: var(--text);
-      border-radius: 7px;
-      padding: 8px;
-      font-size: 14px;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
     }
     button {
       cursor: pointer;
-      background: #0b1622;
-      transition: .18s ease;
+      transition: 0.15s ease;
     }
-    button:hover { border-color: var(--republic); box-shadow: 0 0 8px rgba(0,255,255,.35); }
-    button:disabled { opacity: .45; cursor: not-allowed; }
+    button:hover { border-color: var(--republic); box-shadow: 0 0 10px rgba(0,255,255,0.35); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+    .alert-text { color: var(--alert); font-weight: 700; text-shadow: 0 0 10px rgba(255, 49, 49, 0.6); }
+    .grounded {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255, 49, 49, 0.15);
+      border: 1px solid rgba(255, 49, 49, 0.5);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .pulse {
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px rgba(255,49,49,0.4); }
+      50% { box-shadow: 0 0 18px rgba(255,49,49,0.9); }
+      100% { box-shadow: 0 0 10px rgba(255,49,49,0.4); }
+    }
 
-    .dashboard {
+    .resource-bar {
       display: grid;
-      grid-template-columns: 1fr 1.15fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .resource-card {
+      background: #0a1522;
+      border: 1px solid #223a52;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+    .resource-card .label { color: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .resource-card .value { color: var(--credit); font-weight: 700; font-size: 15px; }
+    .resource-card.alert .value { color: var(--alert); }
+
+    .intro {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      text-align: center;
       gap: 12px;
     }
-    .col { display: flex; flex-direction: column; gap: 12px; }
-    .card { padding: 10px; }
-    .card h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .06em; color: var(--republic); text-transform: uppercase; }
+    .intro button { font-size: 16px; padding: 12px 22px; }
+
+    .tab-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    .tab-button.active {
+      border-color: var(--credit);
+      color: var(--credit);
+      box-shadow: 0 0 12px rgba(57,255,20,0.25);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    .panel h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--republic);
+    }
     .sub { color: var(--muted); font-size: 12px; }
 
-    .sector-tabs { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 8px; }
-    .sector-tab.active { border-color: var(--node); color: var(--node); box-shadow: 0 0 10px rgba(57,255,20,.25); }
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #07111b;
+      border: 1px solid #243a52;
+      overflow: hidden;
+    }
+    .bar .fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #0793c6, var(--republic));
+      box-shadow: 0 0 10px rgba(0,255,255,0.6);
+    }
+    .bar .fill.warning {
+      background: linear-gradient(90deg, #9f1a1a, var(--alert));
+      box-shadow: 0 0 10px rgba(255,49,49,0.7);
+    }
 
-    .asset-grid { display: grid; gap: 7px; }
-    .asset-row {
-      border: 1px solid #1f3448;
+    .exosuit-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .slot {
+      background: #071422;
+      border: 1px solid #1f364d;
+      border-radius: 6px;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+    }
+    .slot.offline { color: var(--alert); border-color: rgba(255,49,49,0.6); }
+
+    .base-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .base-tile {
+      background: #07121f;
+      border: 1px solid #22384d;
       border-radius: 8px;
       padding: 8px;
+      min-height: 70px;
+      font-size: 11px;
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
+      gap: 4px;
+      text-align: left;
+      cursor: pointer;
     }
-    .asset-actions { display: grid; grid-template-columns: auto auto; gap: 6px; }
+    .base-tile.active { border-color: var(--republic); box-shadow: 0 0 8px rgba(0,255,255,0.3); }
+    .base-tile.damaged { border-color: rgba(255,49,49,0.7); color: var(--alert); }
+    .progress {
+      height: 6px;
+      border-radius: 6px;
+      background: #0b1724;
+      border: 1px solid #1f3448;
+      overflow: hidden;
+    }
+    .progress .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0d7b22, var(--credit));
+      width: 0;
+    }
 
-    .viewport {
-      min-height: 220px;
-      background:
-        linear-gradient(rgba(0,255,255,.06), rgba(0,255,255,.01)),
-        linear-gradient(90deg, rgba(0,255,255,.08) 1px, transparent 1px),
-        linear-gradient(rgba(0,255,255,.08) 1px, transparent 1px),
-        #04070d;
-      background-size: auto, 25px 25px, 25px 25px, auto;
-      border: 1px solid #274057;
-      border-radius: 8px;
-      padding: 10px;
+    .planet-list {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
-    .telemetry { font-size: 13px; line-height: 1.45; }
+    .planet-btn {
+      text-align: left;
+    }
+
     .log {
-      max-height: 220px;
+      max-height: 240px;
       overflow: auto;
-      border: 1px solid #1f3448;
+      border: 1px solid #20374a;
       border-radius: 8px;
       padding: 8px;
-      background: #081019;
+      background: #07111b;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 12px;
     }
 
-    .bar-wrap { margin: 8px 0; }
-    .bar-label { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
-    .bar {
-      margin-top: 4px;
-      height: 12px;
-      border-radius: 999px;
-      border: 1px solid #284455;
-      background: #061019;
-      overflow: hidden;
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 10, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 20;
     }
-    .fill {
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, #089ccf, var(--republic));
-      box-shadow: 0 0 12px rgba(0,255,255,.65);
-      transition: width .2s linear;
+    .modal.active { display: flex; }
+    .modal-card {
+      max-width: 600px;
+      width: 100%;
+      background: #0a1422;
+      border: 1px solid #26445c;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 0 18px rgba(0,255,255,0.15);
+      display: grid;
+      gap: 12px;
     }
-    .fill.node { background: linear-gradient(90deg, #0c8a00, var(--node)); box-shadow: 0 0 12px rgba(57,255,20,.65); }
-    .fill.hazard { background: linear-gradient(90deg, #9f1a1a, var(--hazard)); box-shadow: 0 0 12px rgba(255,49,49,.65); }
+    .modal-actions { display: grid; gap: 10px; }
 
-    .resource-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-    .resource {
-      border: 1px solid #20374a;
-      border-radius: 8px;
-      padding: 8px;
-      background: #0a131d;
-    }
-    .resource .k { color: var(--muted); font-size: 12px; }
-    .resource .v { color: var(--node); font-weight: 700; margin-top: 3px; }
+    .hidden { display: none; }
 
-    .market-grid,.research-grid { display:grid; gap:7px; }
-    .inline { display:grid; grid-template-columns: 1fr auto; gap:6px; align-items:center; }
-    .alert { color: var(--hazard); font-weight: 700; text-shadow: 0 0 8px rgba(255,49,49,.5); }
-    .good { color: var(--node); }
-
-    @media (max-width: 1100px) {
-      .dashboard { grid-template-columns: 1fr; }
-      .topbar { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 700px) {
-      .topbar { grid-template-columns: 1fr; }
-      .viewport { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="frame topbar">
-      <div>
-        <label for="difficulty">Campaign Difficulty</label>
-        <select id="difficulty" aria-label="Campaign Difficulty">
-          <option value="padawan">Padawan (Easy)</option>
-          <option value="jedi" selected>Jedi Knight (Normal)</option>
-          <option value="grand">Grand Master (Hard)</option>
-        </select>
+    <div class="frame header">
+      <div class="title">
+        <h1>Star Wars: Republic Overseer - No Man's Galaxy</h1>
+        <div class="sub">Tactical console / incremental grand-strategy simulator</div>
       </div>
-      <div>
-        <label for="scenario">Tactical Scenario Selector</label>
-        <select id="scenario" aria-label="Tactical Scenario Selector">
-          <option value="none">Standard Campaign</option>
-          <option value="naboo">The Blockade of Naboo</option>
-          <option value="geonosis">Assault on Geonosis</option>
-          <option value="outerrim">The Outer Rim Siege</option>
-        </select>
-      </div>
-      <div>
-        <button id="applyScenario">Load Tactical Scenario</button>
-      </div>
-      <div>
-        <button id="startCampaign">Initiate Extraction Campaign</button>
+      <div class="header-actions">
+        <div id="groundedAlert" class="grounded hidden">GROUNDED ALERT</div>
+        <button id="newGame">New Game</button>
       </div>
     </div>
 
-    <div class="dashboard">
-      <div class="col">
-        <div class="frame card">
-          <h3>Planetary Fleet & Mining Nodes</h3>
-          <div class="sector-tabs" id="sectorTabs"></div>
-          <div class="sub" id="sectorDesc"></div>
-          <div class="bar-wrap">
-            <div class="bar-label"><span>Sector Capture Margin</span><span id="captureText">0 / 1000 VP</span></div>
-            <div class="bar"><div id="captureBar" class="fill"></div></div>
-          </div>
-          <div class="bar-wrap">
-            <div class="bar-label"><span>Drone Fleet Fuel Caps</span><span id="fuelText">0 / 0</span></div>
-            <div class="bar"><div id="fuelBar" class="fill node"></div></div>
-          </div>
-          <div class="bar-wrap">
-            <div class="bar-label"><span>Sector Planetary Shield Integrity</span><span id="shieldText">0 / 0</span></div>
-            <div class="bar"><div id="shieldBar" class="fill hazard"></div></div>
-          </div>
-          <div class="inline" style="margin-top:8px">
-            <span class="sub">Local Fuel Transfer (+250)</span>
-            <button id="pumpFuel">Pump Fuel</button>
-          </div>
+    <div id="introScreen" class="frame intro">
+      <div>
+        <div class="sub">Sector terminal offline. Begin with a single console command.</div>
+        <div style="margin-top:12px">
+          <button id="activateTerminalIntro">Activate Sector Terminal</button>
         </div>
+      </div>
+    </div>
 
-        <div class="frame card">
-          <h3>Sector Asset Allocation</h3>
-          <div id="assetGrid" class="asset-grid"></div>
+    <div id="mainUI" class="hidden">
+      <div class="frame resource-bar" id="resourceBar"></div>
+
+      <div class="frame tab-bar" id="tabBar"></div>
+
+      <div class="tab-panel frame" data-tab="terminal" id="tabTerminal">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Sector Terminal</h3>
+            <div class="sub">Manual uplink to generate starter Credits & Tibanna Gas.</div>
+            <div style="margin:10px 0">
+              <button id="activateTerminal">Activate Sector Terminal</button>
+            </div>
+            <div id="terminalStatus" class="sub"></div>
+          </div>
+          <div class="panel">
+            <h3>Unlock Matrix</h3>
+            <div id="unlockList" class="sub"></div>
+          </div>
+          <div class="panel">
+            <h3>Data Transmission Core</h3>
+            <label class="sub" for="saveMatrix">Export / Import Save Matrix</label>
+            <input id="saveMatrix" placeholder="Paste Base64 save matrix" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <button id="exportSave">Export Save Matrix</button>
+              <button id="importSave">Import Save Matrix</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="col">
-        <div class="frame card">
-          <h3>Outer Space Visual Grid Viewport</h3>
-          <div class="viewport">
-            <div class="telemetry" id="telemetry"></div>
-            <div class="telemetry" id="telemetry2"></div>
+      <div class="tab-panel frame" data-tab="exosuit" id="tabExosuit">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Exosuit Hazard Protection</h3>
+            <div class="sub" id="hazardValue"></div>
+            <div class="bar" style="margin:8px 0"><div id="hazardBar" class="fill"></div></div>
+            <div class="exosuit-grid" id="hazardGrid"></div>
+            <div style="margin-top:10px">
+              <button id="rechargeHazard">Recharge Hazard (+35%)</button>
+            </div>
           </div>
-        </div>
-        <div class="frame card">
-          <h3>Sector Combat Log</h3>
-          <div id="combatLog" class="log"></div>
+          <div class="panel">
+            <h3>Multi-Tool Mining Laser</h3>
+            <div class="sub" id="laserValue"></div>
+            <div class="bar" style="margin:8px 0"><div id="laserBar" class="fill"></div></div>
+            <div class="exosuit-grid" id="laserGrid"></div>
+            <div style="margin-top:10px">
+              <button id="rechargeLaser">Recharge Laser (+40%)</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="col">
-        <div class="frame card">
-          <h3>Galactic Command Logistics</h3>
-          <div class="resource-grid" id="resourceGrid"></div>
+      <div class="tab-panel frame" data-tab="base" id="tabBase">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Sector Base Grid</h3>
+            <div id="baseGrid" class="base-grid"></div>
+            <div class="sub" style="margin-top:8px" id="shieldStatus"></div>
+            <div class="sub" id="raidStatus"></div>
+          </div>
+          <div class="panel" id="tilePanel"></div>
         </div>
+      </div>
 
-        <div class="frame card">
-          <h3>Market Broker</h3>
-          <div class="market-grid">
-            <div class="inline"><span class="sub" id="tibannaRate"></span><button id="sellTibanna">Sell 500 Tibanna</button></div>
-            <div class="inline"><span class="sub" id="kyberRate"></span><button id="sellKyber">Sell 50 Kyber</button></div>
+      <div class="tab-panel frame" data-tab="starmap" id="tabStarmap">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Hyperdrive Star Map</h3>
+            <div class="sub" id="warpCost"></div>
+            <div style="margin:10px 0">
+              <button id="warpButton">Warp to Random System</button>
+            </div>
+            <div id="planetDetails" class="sub"></div>
+            <div style="margin:10px 0">
+              <button id="scanButton">Analysis Scanner</button>
+              <div class="sub" id="scanStatus" style="margin-top:6px"></div>
+            </div>
+            <div>
+              <button id="expeditionToggle">Deploy Expedition</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Interstellar Fleet Command</h3>
+            <div id="fleetControls"></div>
+            <div id="fuelCrash" class="sub" style="margin-top:8px"></div>
+            <h3 style="margin-top:14px">Discovered Systems</h3>
+            <div id="planetList" class="planet-list"></div>
           </div>
         </div>
+      </div>
 
-        <div class="frame card">
-          <h3>Research Unlock Tree</h3>
-          <div id="researchGrid" class="research-grid"></div>
-        </div>
-
-        <div class="frame card">
-          <h3>Data Transmission Core</h3>
-          <label for="saveMatrix">Save Matrix Signal</label>
-          <input id="saveMatrix" placeholder="Paste Base64 save matrix" />
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px">
-            <button id="exportSave">Export Save Matrix</button>
-            <button id="importSave">Import Save Matrix</button>
+      <div class="tab-panel frame" data-tab="senate" id="tabSenate">
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>Galactic Senate & Factions</h3>
+            <div id="factionBars"></div>
+          </div>
+          <div class="panel">
+            <h3>Galactic Chronicle Log</h3>
+            <div id="chronicleLog" class="log"></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="eventModal" class="modal">
+    <div class="modal-card">
+      <h3>Executive Dilemma</h3>
+      <div id="eventText" class="sub"></div>
+      <div class="modal-actions">
+        <button id="eventChoiceA"></button>
+        <button id="eventChoiceB"></button>
       </div>
     </div>
   </div>
@@ -268,242 +421,262 @@
     (() => {
       "use strict";
 
-      const STORAGE_KEY = "sw_fleet_logistics_save_v1";
-      const TICK_MS = 800;
-      const VP_MAX = 1000;
-      const MAX_LOG_ENTRIES = 70;
-      const MAX_DISPLAYED_LOGS = 50;
-
-      const DIFFICULTY = {
-        padawan: { income: 1.5, enemyDamage: 0.5, fuelDrain: 0.5, enemyRegen: 1, cost: 1, groundedDestroyChance: 0 },
-        jedi: { income: 1, enemyDamage: 1, fuelDrain: 1, enemyRegen: 1, cost: 1, groundedDestroyChance: 0 },
-        grand: { income: 1, enemyDamage: 1, fuelDrain: 1, enemyRegen: 2, cost: 2, groundedDestroyChance: 0.1 }
+      const STORAGE_KEY = "republic_overseer_save_v1";
+      const TICK_MS = 1000;
+      const CHRONICLE_MS = 10000;
+      const TOOL_MAX = 100;
+      const UNLOCKS = {
+        exosuit: 200,
+        base: 500,
+        starmap: 1000,
+        senate: 2000
       };
 
-      const ASSETS = {
-        probe: {
-          name: "Automatic Mining Probes",
-          cost: 120,
-          fuelUse: 0.15,
-          damage: 0.8,
-          credit: 1.6,
-          tibanna: 1,
-          kyber: 0.35
+      const BUILDINGS = {
+        command: {
+          name: "Command Sector",
+          desc: "Sets tech & level caps. Generates credits.",
+          baseCost: { credits: 180, kyber: 4 },
+          buildTime: 20
         },
-        interceptor: {
-          name: "Droid-Swarm Interceptors",
-          cost: 650,
-          fuelUse: 0.35,
-          damage: 8,
-          credit: 0.4,
-          tibanna: 0,
-          kyber: 0,
-          shieldBoost: 1.1
+        condenser: {
+          name: "Tibanna Condenser",
+          desc: "Passive Tibanna gas generation.",
+          baseCost: { credits: 140 },
+          buildTime: 16
         },
-        cargo: {
-          name: "Heavy Cargo Shuttles",
-          cost: 1450,
-          fuelUse: 0.6,
-          damage: 1.2,
-          credit: 3,
-          tibanna: 0.8,
-          kyber: 0.3
+        drill: {
+          name: "Kyber Drill",
+          desc: "Extracts Kyber and raw elements.",
+          baseCost: { credits: 220, tibanna: 40 },
+          buildTime: 22
         },
-        laat: {
-          name: "LAAT Gunships",
-          cost: 5200,
-          fuelUse: 2.3,
-          damage: 22,
-          credit: 4.8,
-          tibanna: 0,
-          kyber: 0,
-          unlock: "laat"
-        },
-        venator: {
-          name: "Venator-class Star Destroyers",
-          cost: 17500,
-          fuelUse: 5.8,
-          damage: 60,
-          credit: 8,
-          tibanna: 0,
-          kyber: 0,
-          unlock: "venator"
+        shield: {
+          name: "Sector Shield Generator",
+          desc: "Activates 5-min raid immunity.",
+          baseCost: { credits: 520, kyber: 18 },
+          buildTime: 30
         }
       };
 
-      const RESEARCH = {
-        troopers501: {
-          title: "501st Heavy Troopers",
-          costs: { intel: 120, kyber: 25 },
-          unlock: "troopers501",
-          desc: "+12% interceptor combat output"
-        },
-        laat: {
-          title: "LAAT Gunships",
-          costs: { intel: 280, kyber: 95 },
-          unlock: "laat",
-          desc: "Unlock LAAT tactical capital craft"
-        },
-        venator: {
-          title: "Venator Program",
-          costs: { credits: 50000, intel: 950, kyber: 420 },
-          unlock: "venator",
-          desc: "Unlock Venator-class command ships"
-        },
-        hyperlane: {
-          title: "Hyperlane Routing AI",
-          costs: { intel: 320, kyber: 90 },
-          unlock: "hyperlane",
-          desc: "+20% passive resource throughput"
-        }
+      const FLEETS = {
+        probe: { name: "Automated Mining Probes", cost: 260, fuel: 0, boost: 0.12 },
+        arc: { name: "ARC-170 Fighters", cost: 900, fuel: 0, boost: 0.05 },
+        venator: { name: "Venator Capital Ships", cost: 14000, fuel: 3.5, boost: 0.2 }
       };
+
+      const EVENTS = [
+        {
+          id: "blackMarket",
+          text: "A local Gek trader offers a black-market Hyperdrive upgrade if you trade away your Clone Battalion's rations.",
+          choices: [
+            {
+              label: "Accept upgrade (fuel costs -50%, Guild Rep +18, Clone Loyalty -35)",
+              effect: (s) => {
+                s.warpCostMult = Math.max(0.5, s.warpCostMult * 0.5);
+                s.factions.guild = clamp(s.factions.guild + 18, 0, 100);
+                s.factions.clones = clamp(s.factions.clones - 35, 0, 100);
+              }
+            },
+            {
+              label: "Refuse and keep rations (Clone Loyalty +12)",
+              effect: (s) => {
+                s.factions.clones = clamp(s.factions.clones + 12, 0, 100);
+              }
+            }
+          ]
+        },
+        {
+          id: "quarantine",
+          text: "The Galactic Senate orders an immediate quarantine on your newly discovered toxic planet, freezing your mining operations.",
+          choices: [
+            {
+              label: "Comply (Mining frozen 60s, Senate Favor +15)",
+              effect: (s) => {
+                s.miningFrozenUntil = Date.now() + 60000;
+                s.factions.senate = clamp(s.factions.senate + 15, 0, 100);
+              }
+            },
+            {
+              label: "Defy (Senate Favor set to 5, Raid chance +20%)",
+              effect: (s) => {
+                s.factions.senate = 5;
+                s.raidChance = clamp(s.raidChance + 0.2, 0.1, 0.95);
+              }
+            }
+          ]
+        },
+        {
+          id: "cloneMorale",
+          text: "Clone veterans request extended shore leave. Denying them boosts production but risks loyalty.",
+          choices: [
+            {
+              label: "Grant leave (Clone Loyalty +20, Credits -300)",
+              effect: (s) => {
+                s.factions.clones = clamp(s.factions.clones + 20, 0, 100);
+                s.resources.credits = Math.max(0, s.resources.credits - 300);
+              }
+            },
+            {
+              label: "Deny leave (Credits +350, Clone Loyalty -18)",
+              effect: (s) => {
+                s.resources.credits += 350;
+                s.factions.clones = clamp(s.factions.clones - 18, 0, 100);
+              }
+            }
+          ]
+        }
+      ];
 
       const DOM = {
-        difficulty: document.getElementById("difficulty"),
-        scenario: document.getElementById("scenario"),
-        applyScenario: document.getElementById("applyScenario"),
-        startCampaign: document.getElementById("startCampaign"),
-        sectorTabs: document.getElementById("sectorTabs"),
-        sectorDesc: document.getElementById("sectorDesc"),
-        captureBar: document.getElementById("captureBar"),
-        fuelBar: document.getElementById("fuelBar"),
-        shieldBar: document.getElementById("shieldBar"),
-        captureText: document.getElementById("captureText"),
-        fuelText: document.getElementById("fuelText"),
-        shieldText: document.getElementById("shieldText"),
-        pumpFuel: document.getElementById("pumpFuel"),
-        assetGrid: document.getElementById("assetGrid"),
-        telemetry: document.getElementById("telemetry"),
-        telemetry2: document.getElementById("telemetry2"),
-        combatLog: document.getElementById("combatLog"),
-        resourceGrid: document.getElementById("resourceGrid"),
-        tibannaRate: document.getElementById("tibannaRate"),
-        kyberRate: document.getElementById("kyberRate"),
-        sellTibanna: document.getElementById("sellTibanna"),
-        sellKyber: document.getElementById("sellKyber"),
-        researchGrid: document.getElementById("researchGrid"),
+        introScreen: document.getElementById("introScreen"),
+        mainUI: document.getElementById("mainUI"),
+        newGame: document.getElementById("newGame"),
+        activateTerminalIntro: document.getElementById("activateTerminalIntro"),
+        activateTerminal: document.getElementById("activateTerminal"),
+        resourceBar: document.getElementById("resourceBar"),
+        tabBar: document.getElementById("tabBar"),
         saveMatrix: document.getElementById("saveMatrix"),
         exportSave: document.getElementById("exportSave"),
-        importSave: document.getElementById("importSave")
+        importSave: document.getElementById("importSave"),
+        terminalStatus: document.getElementById("terminalStatus"),
+        unlockList: document.getElementById("unlockList"),
+        hazardBar: document.getElementById("hazardBar"),
+        hazardValue: document.getElementById("hazardValue"),
+        laserBar: document.getElementById("laserBar"),
+        laserValue: document.getElementById("laserValue"),
+        hazardGrid: document.getElementById("hazardGrid"),
+        laserGrid: document.getElementById("laserGrid"),
+        rechargeHazard: document.getElementById("rechargeHazard"),
+        rechargeLaser: document.getElementById("rechargeLaser"),
+        baseGrid: document.getElementById("baseGrid"),
+        tilePanel: document.getElementById("tilePanel"),
+        raidStatus: document.getElementById("raidStatus"),
+        shieldStatus: document.getElementById("shieldStatus"),
+        warpButton: document.getElementById("warpButton"),
+        warpCost: document.getElementById("warpCost"),
+        planetDetails: document.getElementById("planetDetails"),
+        scanButton: document.getElementById("scanButton"),
+        scanStatus: document.getElementById("scanStatus"),
+        expeditionToggle: document.getElementById("expeditionToggle"),
+        planetList: document.getElementById("planetList"),
+        fleetControls: document.getElementById("fleetControls"),
+        fuelCrash: document.getElementById("fuelCrash"),
+        factionBars: document.getElementById("factionBars"),
+        chronicleLog: document.getElementById("chronicleLog"),
+        eventModal: document.getElementById("eventModal"),
+        eventText: document.getElementById("eventText"),
+        eventChoiceA: document.getElementById("eventChoiceA"),
+        eventChoiceB: document.getElementById("eventChoiceB"),
+        groundedAlert: document.getElementById("groundedAlert")
       };
 
       const fmt = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
       const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
-      const chance = (p) => Math.random() < p;
-      const encodeState = (value) => {
-        const bytes = new TextEncoder().encode(JSON.stringify(value));
-        const chars = [];
-        for (let i = 0; i < bytes.length; i += 1) chars.push(String.fromCharCode(bytes[i]));
-        return btoa(chars.join(""));
-      };
-      const decodeState = (base64) => {
-        const binary = atob(base64);
-        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
-        return JSON.parse(new TextDecoder().decode(bytes));
-      };
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const rand = (min, max) => Math.random() * (max - min) + min;
+      const now = () => Date.now();
+
+      const hazardSlots = ["Life Support", "Radiation Layer", "Thermal Shield", "Toxic Filter", "O2 Synth", "Pulse Scrub", "Field Drones", "Combat Foam"];
+      const laserSlots = ["Mining Beam", "Focus Lens", "Coolant Node", "Plasma Coil", "Scatter Blaster", "Power Relay", "Auto-Drill", "Geo Scanner"];
+
+      const nameParts = ["Aurek", "Besh", "Cresh", "Dorn", "Esker", "Voss", "Kesh", "Loth", "Qor", "Zan", "Myra", "Ryl", "Tano", "Sola", "Nix", "Vara"];
+      const envA = ["Radioactive", "Frozen", "Scorched", "Crystal", "Toxic", "Storm", "Aurora", "Molten", "Twilight", "Gamma", "Verdant", "Shattered"];
+      const envB = ["Corellian Swamp", "Hoth Tundra", "Geonosian Rift", "Mustafar Flats", "Naboo Reef", "Outer Rim Wastes", "Jakku Dunes", "Ilum Cradle", "Kessel Maw", "Mandalore Reach"];
+      const scanFinds = [
+        "Glowing Gek-Guanadon",
+        "Kyber-Fused Platings",
+        "Ancient Vy'keen Reliquary",
+        "Proto-Ewok Burrow",
+        "Chromatic Sentinel Spores",
+        "Holo-Mycelium Reef",
+        "Rogue Droid Fossils",
+        "Luminous Bantha Horns",
+        "Echoing Korvax Monolith",
+        "Living Tibanna Crystals"
+      ];
+
+      let scanTimer = null;
 
       const defaultState = () => ({
-        difficulty: "jedi",
-        scenario: "none",
-        selectedSector: "coruscant",
-        running: false,
-        runAllSectors: false,
-        constantWaves: false,
-        constantShieldDrain: false,
+        version: 1,
+        introMode: true,
+        currentTab: "terminal",
         resources: {
-          credits: 2000,
-          tibanna: 1200,
-          kyber: 40,
-          intel: 8
+          credits: 0,
+          tibanna: 0,
+          kyber: 0,
+          intel: 0,
+          elements: 0
         },
-        market: {
-          tibannaCreditRate: 0.42,
-          kyberCreditRate: 12.8
-        },
-        researchUnlocked: {
-          troopers501: false,
-          laat: false,
-          venator: false,
-          hyperlane: false
-        },
-        sectors: {
-          coruscant: {
-            id: "coruscant",
-            name: "Coruscant Orbit",
-            descriptor: "Safe lanes, low extraction yield.",
-            risk: 0.8,
-            yields: { credits: 1.1, tibanna: 0.5, kyber: 0.3, intel: 1.3 },
-            captureVP: 500,
-            enemyShield: 180,
-            enemyControl: 50,
-            shield: 900,
-            shieldMax: 1000,
-            localFuel: 1200,
-            localFuelCap: 4000,
-            assets: { probe: 1, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true,
-            groundedAlerted: false
-          },
-          geonosis: {
-            id: "geonosis",
-            name: "Asteroid Field of Geonosis",
-            descriptor: "High Kyber deposits, elevated blockade hazard.",
-            risk: 1.45,
-            yields: { credits: 1, tibanna: 0.8, kyber: 2.1, intel: 1.2 },
-            captureVP: 350,
-            enemyShield: 260,
-            enemyControl: 65,
-            shield: 750,
-            shieldMax: 900,
-            localFuel: 900,
-            localFuelCap: 3500,
-            assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true,
-            groundedAlerted: false
-          },
-          outerrim: {
-            id: "outerrim",
-            name: "Outer Rim Gas Giants",
-            descriptor: "Extreme Tibanna extraction with severe attrition.",
-            risk: 1.9,
-            yields: { credits: 0.9, tibanna: 2.8, kyber: 0.7, intel: 1.1 },
-            captureVP: 280,
-            enemyShield: 320,
-            enemyControl: 72,
-            shield: 700,
-            shieldMax: 850,
-            localFuel: 700,
-            localFuelCap: 5000,
-            assets: { probe: 0, interceptor: 0, cargo: 0, laat: 0, venator: 0 },
-            victoryPayoutReady: true,
-            groundedAlerted: false
-          }
-        },
-        logs: ["[BOOT] Republic command uplink initialized."]
+        tools: { hazard: 100, laser: 100 },
+        factions: { senate: 50, guild: 45, clones: 55 },
+        unlocks: { exosuit: false, base: false, starmap: false, senate: false },
+        chronicle: ["[BOOT] Sector terminal awaiting activation."],
+        discoveredPlanets: [],
+        activePlanetId: null,
+        expeditionActive: false,
+        warpCostMult: 1,
+        miningFrozenUntil: 0,
+        baseGrid: createGrid(),
+        selectedTile: 0,
+        shieldActiveUntil: 0,
+        raidTimer: 140,
+        raidChance: 0.35,
+        event: null,
+        nextEventIn: 90,
+        fuelCrash: false,
+        groundedAlerted: false,
+        scanActive: false,
+        scanEndAt: 0
       });
 
       let state = loadState();
+
+      function createGrid() {
+        return Array.from({ length: 16 }, () => ({
+          type: null,
+          level: 0,
+          targetLevel: 0,
+          status: "empty",
+          progress: 0
+        }));
+      }
+
+      function normalizePlanet(p) {
+        return {
+          id: p.id,
+          name: p.name,
+          environment: p.environment,
+          hazard: p.hazard,
+          yields: p.yields,
+          discoveries: Array.isArray(p.discoveries) ? p.discoveries : [],
+          fleets: { probe: 0, arc: 0, venator: 0, ...(p.fleets || {}) },
+          venatorActive: p.venatorActive !== false,
+          createdAt: p.createdAt || now()
+        };
+      }
 
       function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return defaultState();
           const parsed = JSON.parse(raw);
-          const merged = defaultState();
-          Object.assign(merged, parsed);
-          merged.resources = { ...merged.resources, ...parsed.resources };
-          merged.market = { ...merged.market, ...parsed.market };
-          merged.researchUnlocked = { ...merged.researchUnlocked, ...parsed.researchUnlocked };
-          for (const id of Object.keys(merged.sectors)) {
-            merged.sectors[id] = {
-              ...merged.sectors[id],
-              ...(parsed.sectors && parsed.sectors[id] ? parsed.sectors[id] : {})
-            };
-            merged.sectors[id].assets = {
-              ...defaultState().sectors[id].assets,
-              ...(parsed.sectors && parsed.sectors[id] && parsed.sectors[id].assets ? parsed.sectors[id].assets : {})
-            };
-          }
+          const fresh = defaultState();
+          const merged = { ...fresh, ...parsed };
+          merged.resources = { ...fresh.resources, ...(parsed.resources || {}) };
+          merged.tools = { ...fresh.tools, ...(parsed.tools || {}) };
+          merged.factions = { ...fresh.factions, ...(parsed.factions || {}) };
+          merged.unlocks = { ...fresh.unlocks, ...(parsed.unlocks || {}) };
+          merged.baseGrid = Array.isArray(parsed.baseGrid)
+            ? parsed.baseGrid.map((tile, i) => ({ ...fresh.baseGrid[i], ...tile }))
+            : fresh.baseGrid;
+          merged.discoveredPlanets = Array.isArray(parsed.discoveredPlanets)
+            ? parsed.discoveredPlanets.map(normalizePlanet)
+            : fresh.discoveredPlanets;
+          merged.event = null;
+          merged.scanActive = false;
+          merged.scanEndAt = 0;
           return merged;
         } catch {
           return defaultState();
@@ -514,398 +687,728 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
 
-      function currentDifficulty() {
-        return DIFFICULTY[state.difficulty] || DIFFICULTY.jedi;
+      function encodeState(value) {
+        const bytes = new TextEncoder().encode(JSON.stringify(value));
+        const chars = [];
+        for (let i = 0; i < bytes.length; i += 1) chars.push(String.fromCharCode(bytes[i]));
+        return btoa(chars.join(""));
+      }
+      function decodeState(base64) {
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
       }
 
-      function selectedSector() {
-        return state.sectors[state.selectedSector];
-      }
-
-      function addLog(text) {
+      function addChronicle(text) {
         const stamp = new Date().toLocaleTimeString();
-        state.logs.push(`[${stamp}] ${text}`);
-        if (state.logs.length > MAX_LOG_ENTRIES) state.logs = state.logs.slice(-MAX_LOG_ENTRIES);
+        state.chronicle.push(`[${stamp}] ${text}`);
+        if (state.chronicle.length > 80) state.chronicle = state.chronicle.slice(-80);
       }
 
-      function renderTabs() {
-        DOM.sectorTabs.innerHTML = "";
-        for (const s of Object.values(state.sectors)) {
-          const btn = document.createElement("button");
-          btn.className = "sector-tab" + (s.id === state.selectedSector ? " active" : "");
-          btn.textContent = s.name;
-          btn.onclick = () => {
-            state.selectedSector = s.id;
-            render();
-            persist();
-          };
-          DOM.sectorTabs.appendChild(btn);
+      function setTab(tabId) {
+        state.currentTab = tabId;
+        render();
+        persist();
+      }
+
+      function currentPlanet() {
+        return state.discoveredPlanets.find((p) => p.id === state.activePlanetId) || null;
+      }
+
+      function getCommandLevel() {
+        return Math.max(
+          1,
+          ...state.baseGrid.filter((t) => t.type === "command" && t.status === "ready").map((t) => t.level)
+        );
+      }
+
+      function buildCost(type, targetLevel) {
+        const base = BUILDINGS[type].baseCost;
+        const mult = Math.pow(1.6, targetLevel - 1);
+        const cost = {};
+        for (const [k, v] of Object.entries(base)) cost[k] = Math.round(v * mult);
+        return cost;
+      }
+
+      function canAfford(cost) {
+        return Object.entries(cost).every(([k, v]) => (state.resources[k] || 0) >= v);
+      }
+
+      function payCost(cost) {
+        for (const [k, v] of Object.entries(cost)) state.resources[k] = Math.max(0, state.resources[k] - v);
+      }
+
+      function updateUnlocks() {
+        if (!state.unlocks.exosuit && state.resources.credits >= UNLOCKS.exosuit) {
+          state.unlocks.exosuit = true;
+          addChronicle("Unlocked Exosuit & Tool systems.");
+        }
+        if (!state.unlocks.base && state.resources.credits >= UNLOCKS.base) {
+          state.unlocks.base = true;
+          addChronicle("Sector Base Grid online.");
+        }
+        if (!state.unlocks.starmap && state.resources.credits >= UNLOCKS.starmap) {
+          state.unlocks.starmap = true;
+          addChronicle("Hyperdrive Star Map unlocked.");
+        }
+        if (!state.unlocks.senate && state.resources.credits >= UNLOCKS.senate) {
+          state.unlocks.senate = true;
+          addChronicle("Galactic Senate & Factions interface available.");
         }
       }
 
-      function renderResources() {
-        const mapping = [
-          ["Credits", state.resources.credits],
-          ["Tibanna Gas", state.resources.tibanna],
-          ["Kyber Fragments", state.resources.kyber],
-          ["Republic Intel", state.resources.intel]
-        ];
-        DOM.resourceGrid.innerHTML = "";
-        for (const [k, v] of mapping) {
-          const box = document.createElement("div");
-          box.className = "resource";
-          box.innerHTML = `<div class="k">${k}</div><div class="v">${fmt(v)}</div>`;
-          DOM.resourceGrid.appendChild(box);
+      function generatePlanet() {
+        const name = `${pick(nameParts)}-${Math.floor(rand(10, 99))}`;
+        const environment = `${pick(envA)} ${pick(envB)}`;
+        const hazard = Number(rand(0.9, 2.6).toFixed(2));
+        const yields = {
+          credits: Number(rand(0.8, 3.2).toFixed(2)),
+          tibanna: Number(rand(1.4, 4.6).toFixed(2)),
+          kyber: Number(rand(0.4, 1.9).toFixed(2)),
+          elements: Number(rand(0.9, 3.1).toFixed(2))
+        };
+        return normalizePlanet({
+          id: `p-${now()}-${Math.floor(Math.random() * 9999)}`,
+          name,
+          environment,
+          hazard,
+          yields,
+          discoveries: [],
+          fleets: { probe: 0, arc: 0, venator: 0 },
+          venatorActive: true,
+          createdAt: now()
+        });
+      }
+
+      function startScan() {
+        if (state.scanActive || !currentPlanet()) return;
+        state.scanActive = true;
+        state.scanEndAt = now() + 3000;
+        addChronicle("Analysis scanner engaged...");
+        render();
+        if (scanTimer) clearInterval(scanTimer);
+        scanTimer = setInterval(() => {
+          if (!state.scanActive) {
+            clearInterval(scanTimer);
+            scanTimer = null;
+            return;
+          }
+          if (now() >= state.scanEndAt) {
+            finishScan();
+          } else {
+            render();
+          }
+        }, 250);
+      }
+
+      function finishScan() {
+        state.scanActive = false;
+        const planet = currentPlanet();
+        if (!planet) return;
+        const discovery = pick(scanFinds);
+        planet.discoveries.unshift(discovery);
+        const intelGain = Math.round(6 * planet.hazard);
+        state.resources.intel += intelGain;
+        state.tools.hazard = clamp(state.tools.hazard - planet.hazard * 2.2, 0, TOOL_MAX);
+        state.tools.laser = clamp(state.tools.laser - planet.hazard * 1.4, 0, TOOL_MAX);
+        addChronicle(`Scanner result: ${discovery}. Intel +${intelGain}.`);
+        render();
+        persist();
+      }
+
+      function triggerEvent() {
+        if (state.event || !state.unlocks.senate) return;
+        const event = pick(EVENTS);
+        state.event = event.id;
+        addChronicle("Executive dilemma requires immediate action.");
+        render();
+      }
+
+      function resolveEvent(choiceIndex) {
+        const event = EVENTS.find((e) => e.id === state.event);
+        if (!event) return;
+        const choice = event.choices[choiceIndex];
+        if (choice && typeof choice.effect === "function") choice.effect(state);
+        addChronicle(`Decision executed: ${choice.label}`);
+        state.event = null;
+        state.nextEventIn = Math.floor(rand(80, 140));
+        render();
+        persist();
+      }
+
+      function playAlert() {
+        try {
+          const context = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = context.createOscillator();
+          const gain = context.createGain();
+          osc.type = "square";
+          osc.frequency.value = 220;
+          gain.gain.value = 0.05;
+          osc.connect(gain);
+          gain.connect(context.destination);
+          osc.start();
+          osc.stop(context.currentTime + 0.25);
+        } catch {
+          // Audio is optional and may fail if blocked.
         }
       }
 
-      function renderAssets() {
-        const sector = selectedSector();
-        const diff = currentDifficulty();
-        DOM.assetGrid.innerHTML = "";
+      function tick() {
+        updateUnlocks();
 
-        for (const [key, def] of Object.entries(ASSETS)) {
-          const unlocked = !def.unlock || state.researchUnlocked[def.unlock];
-          const cost = Math.round(def.cost * diff.cost);
-          const row = document.createElement("div");
-          row.className = "asset-row";
-          row.innerHTML = `
-            <div>
-              <div>${def.name}</div>
-              <div class="sub">Cost: ${fmt(cost)} Credits | Owned: ${sector.assets[key]}${!unlocked ? " | LOCKED" : ""}</div>
-            </div>
-          `;
-          const actions = document.createElement("div");
-          actions.className = "asset-actions";
-          const buy = document.createElement("button");
-          buy.textContent = "+1";
-          buy.disabled = !unlocked || state.resources.credits < cost;
-          buy.onclick = () => {
-            if (state.resources.credits < cost || !unlocked) return;
-            state.resources.credits -= cost;
-            sector.assets[key] += 1;
-            addLog(`${def.name} deployed in ${sector.name}.`);
-            render();
-            persist();
-          };
-
-          const sell = document.createElement("button");
-          sell.textContent = "-1";
-          sell.disabled = sector.assets[key] <= 0;
-          sell.onclick = () => {
-            if (sector.assets[key] <= 0) return;
-            sector.assets[key] -= 1;
-            state.resources.credits += Math.round(cost * 0.45);
-            render();
-            persist();
-          };
-          actions.append(buy, sell);
-          row.appendChild(actions);
-          DOM.assetGrid.appendChild(row);
+        if (state.event) {
+          persist();
+          render();
+          return;
         }
-      }
 
-      function renderResearch() {
-        DOM.researchGrid.innerHTML = "";
-        for (const r of Object.values(RESEARCH)) {
-          const unlocked = state.researchUnlocked[r.unlock];
-          const canPay = Object.entries(r.costs).every(([k, v]) => state.resources[k] >= v);
-          const row = document.createElement("div");
-          row.className = "asset-row";
-          row.innerHTML = `<div><div>${r.title}</div><div class="sub">${r.desc} | Cost: ${Object.entries(r.costs).map(([k, v]) => `${v} ${k}`).join(", ")}</div></div>`;
-          const btn = document.createElement("button");
-          btn.textContent = unlocked ? "Unlocked" : "Research";
-          btn.disabled = unlocked || !canPay;
-          btn.onclick = () => {
-            if (unlocked) return;
-            for (const [k, v] of Object.entries(r.costs)) state.resources[k] -= v;
-            state.researchUnlocked[r.unlock] = true;
-            addLog(`Research complete: ${r.title}.`);
-            render();
-            persist();
-          };
-          row.appendChild(btn);
-          DOM.researchGrid.appendChild(row);
-        }
-      }
+        const planet = currentPlanet();
+        const shieldActive = now() < state.shieldActiveUntil;
+        const miningFrozen = now() < state.miningFrozenUntil;
 
-      function renderCenter() {
-        const s = selectedSector();
-        const active = state.runAllSectors || (state.running && state.selectedSector === s.id);
-        DOM.sectorDesc.textContent = `${s.descriptor} ${active ? "Campaign Active" : "Campaign Standby"}`;
-
-        const capturePct = (s.captureVP / VP_MAX) * 100;
-        const fuelPct = (s.localFuel / s.localFuelCap) * 100;
-        const shieldPct = (s.shield / s.shieldMax) * 100;
-        DOM.captureBar.style.width = `${capturePct}%`;
-        DOM.fuelBar.style.width = `${clamp(fuelPct, 0, 100)}%`;
-        DOM.shieldBar.style.width = `${clamp(shieldPct, 0, 100)}%`;
-        DOM.captureText.textContent = `${fmt(s.captureVP)} / ${VP_MAX} VP`;
-        DOM.fuelText.textContent = `${fmt(s.localFuel)} / ${fmt(s.localFuelCap)}`;
-        DOM.shieldText.textContent = `${fmt(s.shield)} / ${fmt(s.shieldMax)}`;
-
-        const totalAssets = Object.values(s.assets).reduce((a, b) => a + b, 0);
-        const grounded = s.localFuel <= 0;
-        DOM.telemetry.innerHTML = [
-          `<div><strong>${s.name}</strong></div>`,
-          `<div>Separatist Control: <span class="${s.enemyControl > 60 ? "alert" : ""}">${fmt(s.enemyControl)}%</span></div>`,
-          `<div>Enemy Shield Envelope: ${fmt(s.enemyShield)}</div>`,
-          `<div>Fleet Assets Active: ${fmt(totalAssets)}</div>`,
-          `<div>Drone Deployment Limit: ${fmt(Math.floor(s.localFuelCap / 35))}</div>`,
-          `<div>Capital Ship Status: <span class="${grounded ? "alert" : "good"}">${grounded ? "GROUNDED ALERT" : "Nominal"}</span></div>`
-        ].join("");
-
-        DOM.telemetry2.innerHTML = [
-          `<div><strong>Live Telemetry Tick</strong></div>`,
-          `<div>Campaign Mode: ${state.runAllSectors ? "Tri-Sector Siege" : (state.running ? "Single-Sector" : "Idle")}</div>`,
-          `<div>Difficulty Matrix: ${state.difficulty.toUpperCase()}</div>`,
-          `<div>Constant Waves: ${state.constantWaves ? "ENABLED" : "STANDBY"}</div>`,
-          `<div>Shield Drain Event: <span class="${state.constantShieldDrain ? "alert" : ""}">${state.constantShieldDrain ? "ACTIVE" : "None"}</span></div>`,
-          `<div>Market Ratios: TIB ${state.market.tibannaCreditRate.toFixed(2)} | KYB ${state.market.kyberCreditRate.toFixed(2)}</div>`
-        ].join("");
-      }
-
-      function renderLog() {
-        DOM.combatLog.innerHTML = state.logs.slice(-MAX_DISPLAYED_LOGS).map((l) => `<div>${l}</div>`).join("");
-        DOM.combatLog.scrollTop = DOM.combatLog.scrollHeight;
-      }
-
-      function renderMarket() {
-        DOM.tibannaRate.textContent = `Tibanna Exchange: 1 Tibanna = ${state.market.tibannaCreditRate.toFixed(2)} Credits`;
-        DOM.kyberRate.textContent = `Kyber Exchange: 1 Kyber = ${state.market.kyberCreditRate.toFixed(2)} Credits`;
-      }
-
-      function render() {
-        DOM.difficulty.value = state.difficulty;
-        DOM.scenario.value = state.scenario;
-        DOM.startCampaign.textContent = state.running || state.runAllSectors ? "Campaign Running" : "Initiate Extraction Campaign";
-        renderTabs();
-        renderResources();
-        renderAssets();
-        renderResearch();
-        renderCenter();
-        renderLog();
-        renderMarket();
-      }
-
-      function campaignTick() {
-        const diff = currentDifficulty();
-
-        state.market.tibannaCreditRate = clamp(state.market.tibannaCreditRate + (Math.random() - 0.5) * 0.03, 0.22, 0.72);
-        state.market.kyberCreditRate = clamp(state.market.kyberCreditRate + (Math.random() - 0.5) * 0.4, 8, 20);
-
-        let creditsGain = 2.2 * diff.income;
-        let tibannaGain = 0;
-        let kyberGain = 0;
-        let intelGain = 0;
-
-        const activeSectors = state.runAllSectors
-          ? Object.values(state.sectors)
-          : (state.running ? [selectedSector()] : []);
-
-        for (const s of activeSectors) {
-          const a = s.assets;
-
-          let combatMult = state.researchUnlocked.troopers501 ? 1.12 : 1;
-          let throughputMult = state.researchUnlocked.hyperlane ? 1.2 : 1;
-
-          const fuelBurn = (
-            a.probe * ASSETS.probe.fuelUse +
-            a.interceptor * ASSETS.interceptor.fuelUse +
-            a.cargo * ASSETS.cargo.fuelUse +
-            a.laat * ASSETS.laat.fuelUse +
-            a.venator * ASSETS.venator.fuelUse
-          ) * diff.fuelDrain * (state.constantWaves ? 1.1 : 1);
-
-          s.localFuel = Math.max(0, s.localFuel - fuelBurn);
-          const grounded = s.localFuel <= 0;
-          const groundedModifier = grounded ? 0.15 : 1;
-
-          if (grounded && (a.laat + a.venator) > 0 && s.shield <= 0 && diff.groundedDestroyChance > 0 && chance(diff.groundedDestroyChance)) {
-            if (a.venator > 0) {
-              a.venator -= 1;
-              addLog(`HAZARD: Grounded Venator destroyed in ${s.name}.`);
-            } else if (a.laat > 0) {
-              a.laat -= 1;
-              addLog(`HAZARD: Grounded LAAT lost in ${s.name}.`);
+        for (const tile of state.baseGrid) {
+          if (tile.status === "building") {
+            tile.progress -= 1;
+            if (tile.progress <= 0) {
+              tile.status = "ready";
+              tile.level = tile.targetLevel || tile.level || 1;
+              tile.targetLevel = 0;
+              addChronicle(`${BUILDINGS[tile.type].name} construction complete.`);
             }
           }
+        }
 
-          const enemyWave = (6 + s.risk * 5) * (state.constantWaves ? 1.8 : 1);
-          const enemyDamage = enemyWave * diff.enemyDamage;
-          const friendlyShielding = a.interceptor * ASSETS.interceptor.shieldBoost;
-          s.shield = clamp(s.shield - Math.max(0, enemyDamage - friendlyShielding), 0, s.shieldMax);
+        let creditsGain = 0;
+        let tibannaGain = 0;
+        let kyberGain = 0;
+        let elementGain = 0;
 
-          const enemyRegen = (2.2 + s.risk) * diff.enemyRegen * (state.constantWaves ? 1.25 : 1);
-          const playerDamage = (
-            a.probe * ASSETS.probe.damage +
-            a.interceptor * ASSETS.interceptor.damage * combatMult +
-            a.cargo * ASSETS.cargo.damage +
-            a.laat * ASSETS.laat.damage +
-            a.venator * ASSETS.venator.damage
-          ) * groundedModifier;
+        const commandLevel = getCommandLevel();
+        const commandBoost = 1 + commandLevel * 0.05;
 
-          s.enemyShield = clamp(s.enemyShield + enemyRegen - (playerDamage * 0.34), 0, 620);
-          const tug = clamp((playerDamage - s.enemyShield * 0.11) * 0.75, -24, 24);
-          s.captureVP = clamp(s.captureVP + tug, 0, VP_MAX);
-          s.enemyControl = 100 - ((s.captureVP / VP_MAX) * 100);
-
-          if (state.constantShieldDrain) {
-            s.shield = clamp(s.shield - 4.8, 0, s.shieldMax);
-          } else {
-            s.shield = clamp(s.shield + 1.2, 0, s.shieldMax);
+        for (const tile of state.baseGrid) {
+          if (tile.status !== "ready") continue;
+          if (tile.type === "command") creditsGain += 1.4 * tile.level;
+          if (tile.type === "condenser") tibannaGain += 1.2 * tile.level;
+          if (tile.type === "drill") {
+            kyberGain += 0.6 * tile.level;
+            elementGain += 0.8 * tile.level;
           }
+        }
 
-          const sectorThroughput = throughputMult * diff.income;
-          creditsGain += (a.probe * ASSETS.probe.credit * s.yields.credits + a.cargo * ASSETS.cargo.credit + a.laat * ASSETS.laat.credit + a.venator * ASSETS.venator.credit) * sectorThroughput * groundedModifier;
-          tibannaGain += (a.probe * ASSETS.probe.tibanna + a.cargo * ASSETS.cargo.tibanna) * s.yields.tibanna * sectorThroughput;
-          kyberGain += (a.probe * ASSETS.probe.kyber + a.cargo * ASSETS.cargo.kyber) * s.yields.kyber * sectorThroughput;
-          intelGain += (a.interceptor * 0.24 + a.laat * 0.5 + a.venator * 1.4 + (s.captureVP / 1000) * 0.2) * s.yields.intel;
+        if (state.expeditionActive && planet && !miningFrozen) {
+          const fleets = planet.fleets;
+          const venatorActive = planet.venatorActive && fleets.venator > 0;
+          let multiplier = 1 + fleets.probe * FLEETS.probe.boost + fleets.arc * FLEETS.arc.boost;
+          multiplier *= venatorActive ? 10 : 1;
+          if (state.fuelCrash) multiplier *= 0.15;
 
-          if (s.captureVP >= VP_MAX && s.victoryPayoutReady) {
-            const burstCredits = Math.round(22000 * s.risk * diff.income);
-            const burstIntel = Math.round(220 * s.risk);
-            state.resources.credits += burstCredits;
-            state.resources.intel += burstIntel;
-            addLog(`SECTOR SECURED: ${s.name}. Awarded ${fmt(burstCredits)} Credits and ${fmt(burstIntel)} Intel.`);
-            s.captureVP = 680;
-            s.enemyShield = Math.min(620, s.enemyShield + 120);
-            s.victoryPayoutReady = false;
-          }
-          if (s.captureVP < 920) s.victoryPayoutReady = true;
+          creditsGain += planet.yields.credits * multiplier;
+          tibannaGain += planet.yields.tibanna * multiplier;
+          kyberGain += planet.yields.kyber * multiplier;
+          elementGain += planet.yields.elements * multiplier;
 
-          if (grounded && (a.laat + a.venator > 0) && !s.groundedAlerted) {
-            addLog(`Grounded Alert: Capital craft in ${s.name} operating at 15% efficiency.`);
-            s.groundedAlerted = true;
-          }
-          if (!grounded) {
-            s.groundedAlerted = false;
-          }
+          state.tools.hazard = clamp(state.tools.hazard - planet.hazard * 0.12, 0, TOOL_MAX);
+          state.tools.laser = clamp(state.tools.laser - planet.hazard * 0.09, 0, TOOL_MAX);
+        }
+
+        if (state.tools.hazard <= 0) {
+          creditsGain = 0;
+        }
+
+        creditsGain *= commandBoost;
+        if (miningFrozen) {
+          tibannaGain *= 0.3;
+          kyberGain *= 0.3;
+          elementGain *= 0.3;
         }
 
         state.resources.credits += creditsGain;
         state.resources.tibanna = Math.max(0, state.resources.tibanna + tibannaGain);
         state.resources.kyber = Math.max(0, state.resources.kyber + kyberGain);
-        state.resources.intel = Math.max(0, state.resources.intel + intelGain);
-      }
+        state.resources.elements = Math.max(0, state.resources.elements + elementGain);
 
-      function applyScenario(key) {
-        state = defaultState();
-        state.scenario = key;
+        let venatorFuelBurn = 0;
+        for (const p of state.discoveredPlanets) {
+          if (p.venatorActive) venatorFuelBurn += p.fleets.venator * FLEETS.venator.fuel;
+        }
+        if (venatorFuelBurn > 0) {
+          state.resources.tibanna = Math.max(0, state.resources.tibanna - venatorFuelBurn);
+        }
 
-        if (key === "naboo") {
-          state.resources.credits = 0;
-          state.resources.tibanna = 10000;
-          state.sectors.coruscant.assets.probe = 10;
-          for (const s of Object.values(state.sectors)) {
-            s.captureVP = 200;
-            s.enemyControl = 80;
-            s.enemyShield = 350;
+        const hasActiveVenators = state.discoveredPlanets.some((p) => p.venatorActive && p.fleets.venator > 0);
+        const newFuelCrash = state.resources.tibanna <= 0 && hasActiveVenators;
+        if (newFuelCrash && !state.groundedAlerted) {
+          addChronicle("GROUNDED ALERT: Tibanna reserves depleted. Fleet efficiency -85%.");
+          playAlert();
+          state.groundedAlerted = true;
+        }
+        if (!newFuelCrash) state.groundedAlerted = false;
+        state.fuelCrash = newFuelCrash;
+
+        if (!shieldActive) {
+          state.raidTimer -= 1;
+          if (state.raidTimer <= 0) {
+            const raidChance = state.fuelCrash ? clamp(state.raidChance + 0.25, 0.1, 0.95) : state.raidChance;
+            if (Math.random() < raidChance) {
+              const candidates = state.baseGrid
+                .map((tile, i) => ({ tile, i }))
+                .filter(({ tile }) => tile.type && tile.status === "ready");
+              if (candidates.length > 0) {
+                const target = pick(candidates);
+                target.tile.status = "damaged";
+                addChronicle("Separatist Dreadnought inbound. Base tile damaged.");
+              }
+            }
+            state.raidTimer = Math.floor(rand(110, 170));
           }
-          addLog("Scenario loaded: The Blockade of Naboo. Separatist control at 80%.");
         }
 
-        if (key === "geonosis") {
-          state.resources.credits = 50000;
-          state.resources.intel = 500;
-          state.researchUnlocked.troopers501 = true;
-          state.researchUnlocked.laat = true;
-          state.constantWaves = true;
-          state.difficulty = "grand";
-          state.selectedSector = "geonosis";
-          addLog("Scenario loaded: Assault on Geonosis. Hard mode forced with relentless droid waves.");
-        }
-
-        if (key === "outerrim") {
-          state.resources.credits = 500000;
-          state.resources.kyber = 5000;
-          for (const k of Object.keys(state.researchUnlocked)) state.researchUnlocked[k] = true;
-          state.runAllSectors = true;
-          state.running = true;
-          state.constantShieldDrain = true;
-          for (const s of Object.values(state.sectors)) {
-            s.assets.probe = 12;
-            s.assets.interceptor = 8;
-            s.assets.cargo = 6;
-            s.assets.laat = 3;
-            s.assets.venator = 1;
-            s.captureVP = 540;
-            s.localFuel = s.localFuelCap * 0.7;
-          }
-          addLog("Scenario loaded: The Outer Rim Siege. Tri-sector command and persistent shield drain enabled.");
-        }
-
-        if (key === "none") {
-          state.scenario = "none";
-          addLog("Standard campaign initialized.");
+        state.nextEventIn -= 1;
+        if (state.nextEventIn <= 0) {
+          triggerEvent();
         }
 
         persist();
         render();
       }
 
-      DOM.difficulty.addEventListener("change", (e) => {
-        state.difficulty = e.target.value;
-        addLog(`Difficulty updated to ${state.difficulty.toUpperCase()}.`);
-        persist();
-        render();
-      });
+      function renderResources() {
+        const cards = [
+          { label: "Credits", key: "credits", alert: state.tools.hazard <= 0 },
+          { label: "Tibanna Gas", key: "tibanna" },
+          { label: "Kyber", key: "kyber" },
+          { label: "Republic Intel", key: "intel" },
+          { label: "Raw Elements", key: "elements" }
+        ];
+        DOM.resourceBar.innerHTML = "";
+        for (const card of cards) {
+          const box = document.createElement("div");
+          box.className = `resource-card${card.alert ? " alert" : ""}`;
+          const value = state.resources[card.key] || 0;
+          box.innerHTML = `<div class="label">${card.label}</div><div class="value">${fmt(value)}</div>`;
+          DOM.resourceBar.appendChild(box);
+        }
+      }
 
-      DOM.applyScenario.addEventListener("click", () => {
-        applyScenario(DOM.scenario.value);
-      });
+      function renderTabs() {
+        const tabs = [
+          { id: "terminal", label: "Sector Terminal", unlocked: true },
+          { id: "exosuit", label: "Exosuit & Tool", unlocked: state.unlocks.exosuit },
+          { id: "base", label: "Sector Base Grid", unlocked: state.unlocks.base },
+          { id: "starmap", label: "Hyperdrive Star Map", unlocked: state.unlocks.starmap },
+          { id: "senate", label: "Galactic Senate & Factions", unlocked: state.unlocks.senate }
+        ];
+        DOM.tabBar.innerHTML = "";
+        const available = tabs.filter((t) => t.unlocked);
+        if (!available.find((t) => t.id === state.currentTab)) state.currentTab = "terminal";
+        for (const tab of available) {
+          const btn = document.createElement("button");
+          btn.className = `tab-button${state.currentTab === tab.id ? " active" : ""}`;
+          btn.textContent = tab.label;
+          btn.onclick = () => setTab(tab.id);
+          DOM.tabBar.appendChild(btn);
+        }
 
-      DOM.startCampaign.addEventListener("click", () => {
-        if (state.runAllSectors) {
-          state.running = true;
-          addLog("Tri-sector extraction campaign active.");
+        document.querySelectorAll(".tab-panel").forEach((panel) => {
+          panel.classList.toggle("active", panel.dataset.tab === state.currentTab);
+        });
+      }
+
+      function renderTerminal() {
+        const credits = state.resources.credits;
+        const tibanna = state.resources.tibanna;
+        DOM.terminalStatus.textContent = `Terminal yield: +${fmt(14 + credits * 0.02)} Credits | +${fmt(8 + tibanna * 0.01)} Tibanna | +${fmt(4)} Elements.`;
+        DOM.unlockList.innerHTML = [
+          `Exosuit & Tool @ ${UNLOCKS.exosuit} Credits`,
+          `Sector Base Grid @ ${UNLOCKS.base} Credits`,
+          `Hyperdrive Star Map @ ${UNLOCKS.starmap} Credits`,
+          `Galactic Senate & Factions @ ${UNLOCKS.senate} Credits`
+        ].map((t) => `<div>${t}</div>`).join("");
+      }
+
+      function renderExosuit() {
+        DOM.hazardValue.textContent = `Hazard Protection: ${fmt(state.tools.hazard)}%`;
+        DOM.laserValue.textContent = `Mining Laser Charge: ${fmt(state.tools.laser)}%`;
+        DOM.hazardBar.style.width = `${state.tools.hazard}%`;
+        DOM.laserBar.style.width = `${state.tools.laser}%`;
+        DOM.hazardBar.classList.toggle("warning", state.tools.hazard <= 25);
+        DOM.laserBar.classList.toggle("warning", state.tools.laser <= 25);
+
+        DOM.hazardGrid.innerHTML = "";
+        hazardSlots.forEach((slot) => {
+          const cell = document.createElement("div");
+          cell.className = `slot${state.tools.hazard <= 0 ? " offline" : ""}`;
+          cell.textContent = slot;
+          DOM.hazardGrid.appendChild(cell);
+        });
+        DOM.laserGrid.innerHTML = "";
+        laserSlots.forEach((slot) => {
+          const cell = document.createElement("div");
+          cell.className = `slot${state.tools.laser <= 0 ? " offline" : ""}`;
+          cell.textContent = slot;
+          DOM.laserGrid.appendChild(cell);
+        });
+
+        DOM.rechargeHazard.textContent = "Recharge Hazard (+35%) - 30 Tibanna";
+        DOM.rechargeLaser.textContent = "Recharge Laser (+40%) - 20 Elements";
+        DOM.rechargeHazard.disabled = state.resources.tibanna < 30 || state.tools.hazard >= TOOL_MAX || state.event;
+        DOM.rechargeLaser.disabled = state.resources.elements < 20 || state.tools.laser >= TOOL_MAX || state.event;
+      }
+
+      function renderBase() {
+        DOM.baseGrid.innerHTML = "";
+        state.baseGrid.forEach((tile, index) => {
+          const el = document.createElement("div");
+          el.className = `base-tile${index === state.selectedTile ? " active" : ""}${tile.status === "damaged" ? " damaged" : ""}`;
+          let label = "Empty Tile";
+          if (tile.type) {
+            label = `${BUILDINGS[tile.type].name} Lv.${tile.level || tile.targetLevel}`;
+            if (tile.status === "building") label += " (In Progress)";
+            if (tile.status === "damaged") label += " (Damaged)";
+          }
+          el.innerHTML = `
+            <div>${label}</div>
+            <div class="sub">${tile.type ? BUILDINGS[tile.type].desc : "Ready for construction"}</div>
+          `;
+          if (tile.status === "building") {
+            const progress = document.createElement("div");
+            progress.className = "progress";
+            const fill = document.createElement("div");
+            fill.className = "fill";
+            const total = BUILDINGS[tile.type].buildTime || 1;
+            fill.style.width = `${clamp(((total - tile.progress) / total) * 100, 0, 100)}%`;
+            progress.appendChild(fill);
+            el.appendChild(progress);
+          }
+          el.onclick = () => {
+            state.selectedTile = index;
+            render();
+            persist();
+          };
+          DOM.baseGrid.appendChild(el);
+        });
+
+        const shieldActive = now() < state.shieldActiveUntil;
+        const shieldSeconds = Math.max(0, Math.floor((state.shieldActiveUntil - now()) / 1000));
+        DOM.shieldStatus.innerHTML = shieldActive
+          ? `<span class="alert-text">Shield Active</span> | ${Math.floor(shieldSeconds / 60)}:${String(shieldSeconds % 60).padStart(2, "0")}`
+          : "Shield offline";
+        DOM.raidStatus.textContent = shieldActive
+          ? "Raids suppressed while shield holds."
+          : `Raid check in ~${state.raidTimer}s.`;
+
+        renderTilePanel();
+      }
+
+      function renderTilePanel() {
+        const tile = state.baseGrid[state.selectedTile];
+        if (!tile) return;
+        const commandLevel = getCommandLevel();
+        const maxLevel = commandLevel + 1;
+        let content = `<h3>Selected Tile</h3>`;
+        if (!tile.type) {
+          content += `<div class="sub">Construct a building:</div>`;
+          content += `<div style="display:grid;gap:8px;margin-top:8px">`;
+          for (const type of Object.keys(BUILDINGS)) {
+            const cost = buildCost(type, 1);
+            const disabled = !canAfford(cost) || tile.status === "building" || state.event;
+            content += `<button data-build="${type}" ${disabled ? "disabled" : ""}>Build ${BUILDINGS[type].name} (${Object.entries(cost).map(([k, v]) => `${v} ${k}`).join(", ")})</button>`;
+          }
+          content += `</div>`;
         } else {
-          state.running = !state.running;
-          addLog(state.running ? `Campaign started in ${selectedSector().name}.` : "Campaign paused.");
+          const cost = buildCost(tile.type, tile.level + 1);
+          const canUpgrade = tile.level < maxLevel;
+          content += `<div class="sub">${BUILDINGS[tile.type].desc}</div>`;
+          content += `<div class="sub" style="margin-top:8px">Level ${tile.level} / Max ${maxLevel}</div>`;
+          if (tile.status === "damaged") {
+            const repairCost = Math.round(120 + tile.level * 90);
+            content += `<div style="margin-top:8px"><button data-repair ${state.resources.credits < repairCost || state.event ? "disabled" : ""}>Repair (${repairCost} Credits)</button></div>`;
+          } else if (tile.status === "building") {
+            content += `<div class="sub" style="margin-top:8px">Construction underway.</div>`;
+          } else {
+            content += `<div style="display:grid;gap:8px;margin-top:8px">`;
+            content += `<button data-upgrade ${(!canUpgrade || !canAfford(cost) || state.event) ? "disabled" : ""}>Upgrade (${Object.entries(cost).map(([k, v]) => `${v} ${k}`).join(", ")})</button>`;
+            if (tile.type === "shield") {
+              const shieldActive = now() < state.shieldActiveUntil;
+              content += `<button data-shield ${shieldActive || state.event ? "disabled" : ""}>Activate Shield (5 min)</button>`;
+            }
+            content += `</div>`;
+          }
         }
-        persist();
+        DOM.tilePanel.innerHTML = content;
+
+        DOM.tilePanel.querySelectorAll("button[data-build]").forEach((btn) => {
+          btn.onclick = () => {
+            const type = btn.dataset.build;
+            const cost = buildCost(type, 1);
+            if (!canAfford(cost)) return;
+            payCost(cost);
+            tile.type = type;
+            tile.status = "building";
+            tile.targetLevel = 1;
+            tile.progress = BUILDINGS[type].buildTime;
+            addChronicle(`${BUILDINGS[type].name} construction started.`);
+            render();
+            persist();
+          };
+        });
+        const upgradeBtn = DOM.tilePanel.querySelector("button[data-upgrade]");
+        if (upgradeBtn) {
+          upgradeBtn.onclick = () => {
+            const cost = buildCost(tile.type, tile.level + 1);
+            if (!canAfford(cost)) return;
+            payCost(cost);
+            tile.status = "building";
+            tile.targetLevel = tile.level + 1;
+            tile.progress = BUILDINGS[tile.type].buildTime + tile.level * 4;
+            addChronicle(`${BUILDINGS[tile.type].name} upgrading to level ${tile.targetLevel}.`);
+            render();
+            persist();
+          };
+        }
+        const repairBtn = DOM.tilePanel.querySelector("button[data-repair]");
+        if (repairBtn) {
+          repairBtn.onclick = () => {
+            const repairCost = Math.round(120 + tile.level * 90);
+            if (state.resources.credits < repairCost) return;
+            state.resources.credits -= repairCost;
+            tile.status = "ready";
+            addChronicle("Damaged tile repaired.");
+            render();
+            persist();
+          };
+        }
+        const shieldBtn = DOM.tilePanel.querySelector("button[data-shield]");
+        if (shieldBtn) {
+          shieldBtn.onclick = () => {
+            state.shieldActiveUntil = now() + 5 * 60 * 1000;
+            addChronicle("Sector shield generator activated. Raids suppressed for 5 minutes.");
+            render();
+            persist();
+          };
+        }
+      }
+
+      function renderStarMap() {
+        const planet = currentPlanet();
+        const cost = Math.round(200 * state.warpCostMult);
+        DOM.warpCost.textContent = `Warp fuel cost: ${cost} Tibanna`; 
+        DOM.warpButton.disabled = state.resources.tibanna < cost || state.event;
+        DOM.scanButton.disabled = !planet || state.scanActive || state.event;
+        DOM.expeditionToggle.disabled = !planet || state.event;
+        DOM.expeditionToggle.textContent = state.expeditionActive ? "Recall Expedition" : "Deploy Expedition";
+
+        if (!planet) {
+          DOM.planetDetails.innerHTML = "No star system charted. Execute a warp to generate a new sector.";
+        } else {
+          const discoveries = planet.discoveries.slice(0, 3).map((d) => `<div>• ${d}</div>`).join("") || "No anomalies logged.";
+          DOM.planetDetails.innerHTML = `
+            <div><strong>${planet.name}</strong></div>
+            <div>${planet.environment}</div>
+            <div>Hazard Multiplier: ${planet.hazard}x</div>
+            <div>Yield Profile: Credits ${planet.yields.credits}/s | Tibanna ${planet.yields.tibanna}/s | Kyber ${planet.yields.kyber}/s | Elements ${planet.yields.elements}/s</div>
+            <div style="margin-top:6px">Latest anomalies:</div>
+            <div class="sub">${discoveries}</div>
+          `;
+        }
+
+        if (state.scanActive) {
+          const pct = clamp(((state.scanEndAt - now()) / 3000) * 100, 0, 100);
+          DOM.scanStatus.textContent = `Scanning... ${Math.round(100 - pct)}%`;
+        } else {
+          DOM.scanStatus.textContent = "Scanner idle.";
+        }
+
+        DOM.fleetControls.innerHTML = "";
+        if (planet) {
+          for (const [key, def] of Object.entries(FLEETS)) {
+            const row = document.createElement("div");
+            row.style.display = "grid";
+            row.style.gridTemplateColumns = "1fr auto";
+            row.style.gap = "8px";
+            row.style.alignItems = "center";
+            row.style.marginBottom = "6px";
+            row.innerHTML = `<div><div>${def.name}</div><div class="sub">Cost ${fmt(def.cost)} Credits | Assigned ${planet.fleets[key]}</div></div>`;
+            const btn = document.createElement("button");
+            btn.textContent = "+1";
+            btn.disabled = state.resources.credits < def.cost || state.event;
+            btn.onclick = () => {
+              if (state.resources.credits < def.cost) return;
+              state.resources.credits -= def.cost;
+              planet.fleets[key] += 1;
+              addChronicle(`${def.name} assigned to ${planet.name}.`);
+              render();
+              persist();
+            };
+            row.appendChild(btn);
+            DOM.fleetControls.appendChild(row);
+          }
+          const toggle = document.createElement("button");
+          toggle.textContent = planet.venatorActive ? "Stand Down Venators" : "Activate Venators";
+          toggle.disabled = planet.fleets.venator <= 0 || state.event;
+          toggle.onclick = () => {
+            planet.venatorActive = !planet.venatorActive;
+            addChronicle(`Venator ships ${planet.venatorActive ? "activated" : "stood down"} in ${planet.name}.`);
+            render();
+            persist();
+          };
+          DOM.fleetControls.appendChild(toggle);
+        } else {
+          DOM.fleetControls.innerHTML = "<div class='sub'>Fleet command awaits a mapped system.</div>";
+        }
+
+        if (state.fuelCrash) {
+          DOM.fuelCrash.innerHTML = `<span class="alert-text">GROUNDED ALERT</span> - Tibanna reserves exhausted. Production -85% until fuel restored or Venators disabled.`;
+        } else {
+          DOM.fuelCrash.textContent = "Fleet fuel lines stable.";
+        }
+
+        DOM.planetList.innerHTML = "";
+        if (state.discoveredPlanets.length === 0) {
+          DOM.planetList.innerHTML = "<div class='sub'>No systems discovered.</div>";
+        } else {
+          state.discoveredPlanets.forEach((p) => {
+            const btn = document.createElement("button");
+            btn.className = "planet-btn";
+            btn.textContent = p.name + (p.id === state.activePlanetId ? " (Active)" : "");
+            btn.onclick = () => {
+              state.activePlanetId = p.id;
+              render();
+              persist();
+            };
+            DOM.planetList.appendChild(btn);
+          });
+        }
+      }
+
+      function renderSenate() {
+        DOM.factionBars.innerHTML = "";
+        const factions = [
+          { label: "Galactic Senate Favor", key: "senate", color: "#00ffff" },
+          { label: "Bounty Hunter Guild Rep", key: "guild", color: "#39ff14" },
+          { label: "Clone Loyalty", key: "clones", color: "#ff3131" }
+        ];
+        factions.forEach((f) => {
+          const wrap = document.createElement("div");
+          wrap.style.marginBottom = "10px";
+          wrap.innerHTML = `
+            <div class="sub">${f.label} <strong style="float:right">${Math.round(state.factions[f.key])}%</strong></div>
+            <div class="bar"><div class="fill" style="width:${state.factions[f.key]}%;background:${f.color}"></div></div>
+          `;
+          DOM.factionBars.appendChild(wrap);
+        });
+
+        DOM.chronicleLog.innerHTML = state.chronicle.slice(-50).map((l) => `<div>${l}</div>`).join("");
+        DOM.chronicleLog.scrollTop = DOM.chronicleLog.scrollHeight;
+      }
+
+      function renderEventModal() {
+        if (!state.event) {
+          DOM.eventModal.classList.remove("active");
+          return;
+        }
+        const event = EVENTS.find((e) => e.id === state.event);
+        if (!event) return;
+        DOM.eventModal.classList.add("active");
+        DOM.eventText.textContent = event.text;
+        DOM.eventChoiceA.textContent = event.choices[0].label;
+        DOM.eventChoiceB.textContent = event.choices[1].label;
+      }
+
+      function render() {
+        DOM.introScreen.classList.toggle("hidden", !state.introMode);
+        DOM.mainUI.classList.toggle("hidden", state.introMode);
+        DOM.groundedAlert.classList.toggle("hidden", !state.fuelCrash);
+        DOM.groundedAlert.classList.toggle("pulse", state.fuelCrash);
+
+        if (state.introMode) {
+          renderEventModal();
+          return;
+        }
+
+        renderResources();
+        renderTabs();
+        renderTerminal();
+        if (state.unlocks.exosuit) renderExosuit();
+        if (state.unlocks.base) renderBase();
+        if (state.unlocks.starmap) renderStarMap();
+        if (state.unlocks.senate) renderSenate();
+        renderEventModal();
+      }
+
+      DOM.newGame.addEventListener("click", () => {
+        state = defaultState();
+        addChronicle("New campaign initialized.");
         render();
+        persist();
       });
 
-      DOM.pumpFuel.addEventListener("click", () => {
-        const s = selectedSector();
-        const transfer = Math.min(250, state.resources.tibanna);
-        if (transfer <= 0) return;
-        state.resources.tibanna -= transfer;
-        s.localFuel = clamp(s.localFuel + transfer, 0, s.localFuelCap);
-        addLog(`Fuel transfer complete: +${transfer} Tibanna to ${s.name}.`);
-        persist();
+      function activateTerminal() {
+        if (state.event) return;
+        const creditsGain = 14 + state.resources.credits * 0.02;
+        const tibannaGain = 8 + state.resources.tibanna * 0.01;
+        const elementGain = 4;
+        if (state.tools.hazard > 0) state.resources.credits += creditsGain;
+        state.resources.tibanna += tibannaGain;
+        state.resources.elements += elementGain;
+        state.tools.laser = clamp(state.tools.laser - 2.5, 0, TOOL_MAX);
+        addChronicle("Sector terminal pulse harvested starter resources.");
+        state.introMode = false;
+        updateUnlocks();
         render();
+        persist();
+      }
+
+      DOM.activateTerminalIntro.addEventListener("click", activateTerminal);
+      DOM.activateTerminal.addEventListener("click", activateTerminal);
+
+      DOM.rechargeHazard.addEventListener("click", () => {
+        if (state.resources.tibanna < 30 || state.event) return;
+        state.resources.tibanna -= 30;
+        state.tools.hazard = clamp(state.tools.hazard + 35, 0, TOOL_MAX);
+        addChronicle("Hazard protection recharged.");
+        render();
+        persist();
       });
 
-      DOM.sellTibanna.addEventListener("click", () => {
-        const amount = 500;
-        if (state.resources.tibanna < amount) return;
-        state.resources.tibanna -= amount;
-        const payout = amount * state.market.tibannaCreditRate;
-        state.resources.credits += payout;
-        addLog(`Market sale executed: ${amount} Tibanna for ${fmt(payout)} Credits.`);
-        persist();
+      DOM.rechargeLaser.addEventListener("click", () => {
+        if (state.resources.elements < 20 || state.event) return;
+        state.resources.elements -= 20;
+        state.tools.laser = clamp(state.tools.laser + 40, 0, TOOL_MAX);
+        addChronicle("Mining laser recharged.");
         render();
+        persist();
       });
 
-      DOM.sellKyber.addEventListener("click", () => {
-        const amount = 50;
-        if (state.resources.kyber < amount) return;
-        state.resources.kyber -= amount;
-        const payout = amount * state.market.kyberCreditRate;
-        state.resources.credits += payout;
-        addLog(`Market sale executed: ${amount} Kyber for ${fmt(payout)} Credits.`);
-        persist();
+      DOM.warpButton.addEventListener("click", () => {
+        const cost = Math.round(200 * state.warpCostMult);
+        if (state.resources.tibanna < cost || state.event) return;
+        state.resources.tibanna -= cost;
+        const planet = generatePlanet();
+        state.discoveredPlanets.unshift(planet);
+        state.activePlanetId = planet.id;
+        state.expeditionActive = true;
+        addChronicle(`Warp jump complete. Arrived at ${planet.name}.`);
         render();
+        persist();
+      });
+
+      DOM.scanButton.addEventListener("click", startScan);
+
+      DOM.expeditionToggle.addEventListener("click", () => {
+        if (!currentPlanet() || state.event) return;
+        state.expeditionActive = !state.expeditionActive;
+        addChronicle(state.expeditionActive ? "Expedition deployed to surface." : "Expedition recalled.");
+        render();
+        persist();
       });
 
       DOM.exportSave.addEventListener("click", () => {
-        const packed = encodeState(state);
-        DOM.saveMatrix.value = packed;
-        addLog("Save matrix exported.");
-        persist();
+        DOM.saveMatrix.value = encodeState(state);
+        addChronicle("Save matrix exported.");
         render();
+        persist();
       });
 
       DOM.importSave.addEventListener("click", () => {
@@ -913,30 +1416,51 @@
         if (!raw) return;
         try {
           const parsed = decodeState(raw);
-          const clean = defaultState();
-          Object.assign(clean, parsed);
-          clean.resources = { ...clean.resources, ...parsed.resources };
-          clean.market = { ...clean.market, ...parsed.market };
-          clean.researchUnlocked = { ...clean.researchUnlocked, ...parsed.researchUnlocked };
-          for (const id of Object.keys(clean.sectors)) {
-            clean.sectors[id] = { ...clean.sectors[id], ...((parsed.sectors || {})[id] || {}) };
-            clean.sectors[id].assets = { ...defaultState().sectors[id].assets, ...(((parsed.sectors || {})[id] || {}).assets || {}) };
-          }
-          state = clean;
-          addLog("Save matrix imported.");
-          persist();
+          const fresh = defaultState();
+          state = { ...fresh, ...parsed };
+          state.resources = { ...fresh.resources, ...(parsed.resources || {}) };
+          state.tools = { ...fresh.tools, ...(parsed.tools || {}) };
+          state.factions = { ...fresh.factions, ...(parsed.factions || {}) };
+          state.unlocks = { ...fresh.unlocks, ...(parsed.unlocks || {}) };
+          state.baseGrid = Array.isArray(parsed.baseGrid)
+            ? parsed.baseGrid.map((tile, i) => ({ ...fresh.baseGrid[i], ...tile }))
+            : fresh.baseGrid;
+          state.discoveredPlanets = Array.isArray(parsed.discoveredPlanets)
+            ? parsed.discoveredPlanets.map(normalizePlanet)
+            : fresh.discoveredPlanets;
+          state.event = null;
+          state.scanActive = false;
+          state.scanEndAt = 0;
+          addChronicle("Save matrix imported.");
           render();
+          persist();
         } catch {
-          addLog("Import failed: invalid save matrix.");
+          addChronicle("Import failed: invalid save matrix.");
           render();
         }
       });
 
+      DOM.eventChoiceA.addEventListener("click", () => resolveEvent(0));
+      DOM.eventChoiceB.addEventListener("click", () => resolveEvent(1));
+
+      setInterval(tick, TICK_MS);
       setInterval(() => {
-        campaignTick();
-        persist();
-        render();
-      }, TICK_MS);
+        if (!state.introMode && !state.event) {
+          const planet = currentPlanet();
+          const planetName = planet ? planet.name : "local sector";
+          const entries = [
+            `Supply convoys routing through ${planetName}.`,
+            "Senate analysts debate your expansion doctrine.",
+            "Clone squads report new anomalous readings.",
+            "Tibanna condensers hum at optimal frequency.",
+            "Bounty hunters request new contracts.",
+            "Hyperdrive telemetry stream stabilized."
+          ];
+          addChronicle(pick(entries));
+          render();
+          persist();
+        }
+      }, CHRONICLE_MS);
 
       render();
       persist();
